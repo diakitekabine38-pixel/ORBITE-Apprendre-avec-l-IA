@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #08090d;
+  --color-panel: #0e1116;
+  --color-panel-2: #131722;
+  --color-brand: #7c5cff;
+  --color-brand-soft: #a78bfa;
+  --color-glow: #22d3ee;
+  --color-muted: #9aa3b2;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background: #08090d;
+}
+
+body {
+  @apply bg-ink text-white font-sans antialiased;
+}
+
+.glass {
+  @apply bg-panel border border-line rounded-2xl;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-40 disabled:pointer-events-none;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10;
+}
+
+.input {
+  @apply w-full rounded-xl border border-line bg-panel-2 px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20;
+}
+
+.badge {
+  @apply inline-flex items-center gap-1 rounded-full border border-line bg-white/5 px-3 py-1 text-xs font-medium text-muted;
+}
+
+.link {
+  @apply text-glow hover:underline;
+}
+
+h1,
+h2,
+h3 {
+  @apply font-display;
+}

@@ -1,0 +1,26 @@
+# Python / Django
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+backend/staticfiles/
+backend/media/
+*.sqlite3
+*.db
+
+# Environnement & secrets — ne jamais committer
+.env
+.env.local
+.env.*.local
+
+# Node / Vite
+node_modules/
+frontend/dist/
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
