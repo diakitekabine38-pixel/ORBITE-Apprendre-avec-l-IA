@@ -33,6 +33,9 @@ export default function Navbar() {
           {user && <NavLink to="/dashboard" className={navLink}>Mon espace</NavLink>}
           {user && <NavLink to="/chat" className={navLink}>Coach IA</NavLink>}
           {user && <NavLink to="/certificats" className={navLink}>Certificats</NavLink>}
+          {["admin", "super_admin"].includes(user?.role) && (
+            <NavLink to="/admin/agents" className={navLink}>Agents IA</NavLink>
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">

@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Learn from "./pages/Learn";
 import Chat from "./pages/Chat";
 import Certificates from "./pages/Certificates";
+import AdminAgents from "./pages/AdminAgents";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import VerifyCertificate from "./pages/VerifyCertificate";
@@ -67,6 +68,7 @@ export default function App() {
               </Private>
             }
           />
+          <Route path="/admin/agents" element={<AdminAgents />} />
           <Route
             path="/paiement"
             element={

@@ -20,6 +20,29 @@ class AIAgentSerializer(serializers.ModelSerializer):
         ]
 
 
+class AIAgentAdminSerializer(serializers.ModelSerializer):
+    """Full profile used to create/edit an agent persona (admin only)."""
+
+    course_count = serializers.IntegerField(source="courses.count", read_only=True)
+
+    class Meta:
+        model = AIAgent
+        fields = [
+            "id",
+            "code",
+            "name",
+            "specialty",
+            "personality",
+            "system_prompt",
+            "teaching_rules",
+            "expertise",
+            "color",
+            "model",
+            "is_active",
+            "course_count",
+        ]
+
+
 class AIMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIMessage

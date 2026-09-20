@@ -121,3 +121,52 @@ class RecommendationTests(APITestCase):
         recs = Recommendation.objects.filter(user=self.student)
         self.assertGreaterEqual(recs.count(), 1)
         self.assertIn("En cours", recs.first().course.title)
+
+
+class AgentAdminApiTests(APITestCase):
+    def setUp(self):
+        self.admin = make_user("admin_agent", role="admin")
+        self.student = make_user("student_agent")
+        self.agent = make_agent()
+
+    def test_admin_can_create_and_edit_persona(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            "/api/v1/ai/admin/agents/",
+            {
+                "code": "tutorai",
+                "name": "Tutor IA",
+                "specialty": "Mentorat général",
+                "personality": "Patiente et pédagogue.",
+                "system_prompt": "Tu es un tuteur bienveillant. Explique par étapes.",
+                "teaching_rules": ["Expliquer simplement", "Donner un exemple"],
+                "expertise": "advanced",
+                "model": "openai/gpt-oss-20b",
+                "is_active": True,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        created = response.data
+        self.assertEqual(created["system_prompt"], "Tu es un tuteur bienveillant. Explique par étapes.")
+        self.assertEqual(len(created["teaching_rules"]), 2)
+
+        patch = self.client.patch(
+            f"/api/v1/ai/admin/agents/{created['id']}/",
+            {"system_prompt": "Rôle mis à jour : expert senior."},
+            format="json",
+        )
+        self.assertEqual(patch.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch.data["system_prompt"], "Rôle mis à jour : expert senior.")
+
+    def test_public_list_never_exposes_system_prompt(self):
+        response = self.client.get("/api/v1/ai/agents/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("system_prompt", response.data["results"][0])
+
+    def test_non_admin_cannot_manage_agents(self):
+        self.client.force_authenticate(self.student)
+        response = self.client.post(
+            "/api/v1/ai/admin/agents/", {"name": "Nope"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

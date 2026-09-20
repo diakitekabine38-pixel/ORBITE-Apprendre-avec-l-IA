@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register("agents", views.AgentViewSet, basename="ai-agent")
+router.register("admin/agents", views.AgentAdminViewSet, basename="ai-agent-manage")
 router.register("sessions", views.ChatViewSet, basename="ai-session")
 router.register("recommendations", views.RecommendationViewSet, basename="recommendation")
 

@@ -3,12 +3,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.common.permissions import IsAdminOrOwner
+from apps.common.permissions import IsAdminOrOwner, IsAdminUser
 from apps.courses.models import Course, Lesson
 
 from . import services
 from .models import AIAgent, AISession, Recommendation
 from .serializers import (
+    AIAgentAdminSerializer,
     AIAgentSerializer,
     AISessionSerializer,
     ChatPromptSerializer,
@@ -17,9 +18,24 @@ from .serializers import (
 
 
 class AgentViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public catalogue of active agents (read-only for learners)."""
+
     queryset = AIAgent.objects.filter(is_active=True)
     serializer_class = AIAgentSerializer
     permission_classes = [AllowAny]
+
+
+class AgentAdminViewSet(viewsets.ModelViewSet):
+    """Full CRUD to customise agent personas and their roles (admin only)."""
+
+    queryset = AIAgent.objects.all()
+    serializer_class = AIAgentAdminSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get_queryset(self):
+        if not self.request.user.is_admin():
+            return AIAgent.objects.none()
+        return AIAgent.objects.prefetch_related("courses")
 
 
 class ChatViewSet(viewsets.ModelViewSet):
