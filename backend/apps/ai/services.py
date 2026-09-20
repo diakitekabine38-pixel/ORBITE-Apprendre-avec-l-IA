@@ -89,25 +89,79 @@ class OpenAILikeProvider(LLMProvider):
             return MockLLMProvider().complete(system=system, messages=messages)
 
 
-class ContextBuilder:
-    """Builds a focused, pedagogically-situated context for the agent."""
+def _lesson_text(lesson):
+    """Normalise le contenu d'une leçon (chaîne ou bloc JSON) pour l'agent."""
+    content = lesson.content or ""
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict):
+                text = block.get("text") or block.get("content") or ""
+                if text:
+                    parts.append(str(text))
+            else:
+                parts.append(str(block))
+        content = " ".join(parts)
+    return str(content).strip()
 
-    def __init__(self, user, session):
+
+class ContextBuilder:
+    """Builds a focused, pedagogically-situated context for the tutor agent.
+
+    It turns the learner profile (personal data, progression, mastery signals,
+    goals, last assessments) into a prompt block so every agent tutors based on
+    what the learner really knows — not on generic advice.
+    """
+
+    def __init__(self, user, session, agent=None):
         self.user = user
         self.session = session
+        self.agent = agent
 
     def build(self):
-        from apps.learning.models import Enrollment
+        from apps.learning.models import Enrollment, Goal, UserSkill
 
+        u = self.user
         lines = [
-            f"Tu t'adresses à {self.user.full_name}.",
-            f"Méthode ORBITE : l'IA explique, reformule, donne des exemples, pose des questions, propose des exercices puis corrige.",
+            f"Tu t'adresses à {u.full_name} (pseudo : {u.username}).",
+            "Méthode ORBITE : tu es un tuteur, pas un simple chatbot. "
+            "Explique, reformule, donne un exemple concret, pose une question, "
+            "propose un mini-exercice puis évalue — une seule étape à la fois, "
+            "en t'adaptant aux réponses de l'apprenant.",
+            "Langue : réponds toujours en français, sois précis, bienveillant et "
+            "n'invente jamais de faits.",
         ]
+
+        if self.agent is not None:
+            rules = self.agent.teaching_rules or []
+            if isinstance(rules, list) and rules:
+                lines.append(
+                    f"Règles pédagogiques de {self.agent.name} : "
+                    + "; ".join(str(rule) for rule in rules)
+                    + "."
+                )
+
         if self.session.course_id:
             lines.append(f"Formation suivie : {self.session.course.title}.")
         if self.session.lesson_id:
-            lines.append(f"Leçon en cours : {self.session.lesson.title}.")
-        enrollments = Enrollment.objects.filter(user=self.user).select_related("course")
+            lesson = self.session.lesson
+            module = lesson.module
+            lines.append(
+                f"Leçon en cours : « {lesson.title} » — module « {module.title} »."
+            )
+            snippet = _lesson_text(lesson)[:400]
+            if snippet:
+                lines.append(f"Contenu de la leçon en cours : {snippet}")
+
+        goals = Goal.objects.filter(user=u, status=Goal.STATUS_ACTIVE)[:3]
+        if goals.exists():
+            lines.append(
+                "Objectifs actifs de l'apprenant : "
+                + ", ".join(goal.title for goal in goals)
+                + "."
+            )
+
+        enrollments = Enrollment.objects.filter(user=u).select_related("course")
         if enrollments.exists():
             rows = ", ".join(
                 f"{e.course.title} ({int(e.progress)}%)" for e in enrollments[:5]
@@ -115,6 +169,39 @@ class ContextBuilder:
             lines.append(f"Progression de l'apprenant : {rows}.")
         else:
             lines.append("L'apprenant n'est pas encore inscrit à une formation.")
+
+        skills = list(
+            UserSkill.objects.filter(user=u)
+            .select_related("skill")
+            .order_by("-mastery_score")
+        )
+        if skills:
+            strong = ", ".join(
+                f"{s.skill.name} ({s.mastery_score}%)" for s in skills[:5]
+            )
+            weak_list = [f"{s.skill.name} ({s.mastery_score}%)" for s in skills if s.mastery_score < 40]
+            lines.append(f"Points forts identifiés : {strong}.")
+            if weak_list:
+                lines.append(
+                    "Compétences à renforcer : " + ", ".join(weak_list) + "."
+                )
+        else:
+            lines.append(
+                "Aucune compétence évaluée pour l'instant : propose des questions "
+                "d'évaluation pour mesurer les acquis."
+            )
+
+        from apps.assessments.models import Attempt
+
+        attempts = list(Attempt.objects.filter(user=u).order_by("-created_at")[:3])
+        if attempts:
+            results = ", ".join(
+                f"{a.quiz.title} : {a.score}% "
+                f"({'réussi' if a.passed else 'à retravailler'})"
+                for a in attempts
+            )
+            lines.append(f"Derniers résultats d'évaluation : {results}.")
+
         return "\n".join(lines)
 
 
@@ -133,20 +220,33 @@ class AIOrchestrator:
             return self.session.course.ai_mentor
         return AIAgent.objects.filter(code="kodex", is_active=True).first() or AIAgent.objects.first()
 
-    def reply(self, content, agent=None, save_session=True):
+    def reply(self, content, agent=None, save_session=True, course=None, lesson=None):
         agent = agent or self.select_agent()
         if self.session is None:
             self.session = AISession.objects.create(
-                user=self.user, agent=agent, title=content[:60]
+                user=self.user,
+                agent=agent,
+                title=content[:60],
+                course=course,
+                lesson=lesson,
             )
-        elif self.session.agent_id != agent.id:
-            self.session.agent = agent
-            self.session.save(update_fields=["agent", "updated_at"])
+        else:
+            fields = ["updated_at"]
+            if self.session.agent_id != agent.id:
+                self.session.agent = agent
+                fields.append("agent")
+            if course is not None and self.session.course_id is None:
+                self.session.course = course
+                fields.append("course")
+            if lesson is not None and self.session.lesson_id != lesson.id:
+                self.session.lesson = lesson
+                fields.append("lesson")
+            self.session.save(update_fields=fields)
 
         history = list(
             self.session.messages.values_list("role", "content")[:10]
         )
-        system = f"{agent.system_prompt or agent.personality}\n{ContextBuilder(self.user, self.session).build()}"
+        system = f"{agent.system_prompt or agent.personality}\n{ContextBuilder(self.user, self.session, agent).build()}"
         messages = [{"role": role, "content": content} for role, content in history]
         messages.append({"role": "user", "content": content})
 

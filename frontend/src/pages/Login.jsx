@@ -32,8 +32,8 @@ export default function Login() {
         <div>
           <h1 className="text-2xl font-bold">Connexion</h1>
           <p className="mt-1 text-sm text-muted">
-            Demo : <code className="rounded bg-white/5 px-1.5 py-0.5">apprenant</code> /{" "}
-            <code className="rounded bg-white/5 px-1.5 py-0.5">Apprenant123!</code>
+            Demo : <code className="rounded bg-ivory-soft px-1.5 py-0.5">apprenant</code> /{" "}
+            <code className="rounded bg-ivory-soft px-1.5 py-0.5">Apprenant123!</code>
           </p>
         </div>
         <input
@@ -53,7 +53,7 @@ export default function Login() {
           autoComplete="current-password"
           required
         />
-        {error && <p className="text-sm text-rose-400">{error}</p>}
+        {error && <p className="text-sm text-rose-600">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Connexion…" : "Se connecter"}</button>
         <p className="text-center text-sm text-muted">
           Pas encore de compte ? <Link to="/inscription" className="link">Inscription</Link>

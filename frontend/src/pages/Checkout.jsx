@@ -105,7 +105,7 @@ export default function Checkout() {
               key={m.id}
               onClick={() => setProvider(m.code)}
               className={`rounded-xl border px-4 py-2 text-sm transition ${
-                provider === m.code ? "border-brand bg-brand/15 text-white" : "border-line text-muted hover:text-white"
+                provider === m.code ? "border-brand bg-brand/15 text-ink-deep" : "border-line text-muted hover:text-ink-deep"
               }`}
             >
               {m.name}
@@ -114,7 +114,7 @@ export default function Checkout() {
         </div>
       )}
 
-      {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
+      {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
 
       <button className="btn-primary mt-6 w-full" disabled={busy || !itemCards.length} onClick={placeOrder}>
         {busy ? "Paiement en cours…" : "Confirmer et payer"}

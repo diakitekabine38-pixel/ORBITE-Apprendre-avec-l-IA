@@ -13,6 +13,7 @@ import Chat from "./pages/Chat";
 import Certificates from "./pages/Certificates";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import VerifyCertificate from "./pages/VerifyCertificate";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -74,6 +75,7 @@ export default function App() {
               </Private>
             }
           />
+          <Route path="/verification/:certificateId" element={<VerifyCertificate />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

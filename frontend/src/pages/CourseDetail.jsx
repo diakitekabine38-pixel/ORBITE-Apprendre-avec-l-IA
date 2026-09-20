@@ -68,7 +68,7 @@ export default function CourseDetail() {
     <div className="mx-auto max-w-6xl px-4 py-10">
       <nav className="mb-6 text-sm text-muted">
         <Link to="/catalogue" className="link">Catalogue</Link> <span className="mx-1">/</span>
-        <span className="text-white">{course.title}</span>
+        <span className="text-ink-deep">{course.title}</span>
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -131,7 +131,7 @@ export default function CourseDetail() {
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <div className="glass p-6 text-center">
             {course.is_free ? (
-              <p className="font-display text-3xl font-bold text-emerald-400">Gratuit</p>
+              <p className="font-display text-3xl font-bold text-emerald-600">Gratuit</p>
             ) : (
               <>
                 <p className="font-display text-3xl font-bold">{money(course.price)}</p>
@@ -161,15 +161,15 @@ export default function CourseDetail() {
               <Link to="/inscription" className="link mt-4 inline-block text-sm">Créer un compte</Link>
             )}
 
-            {notice === "review" && <p className="mt-4 text-sm text-emerald-400">Merci pour votre avis.</p>}
-            {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
+            {notice === "review" && <p className="mt-4 text-sm text-emerald-600">Merci pour votre avis.</p>}
+            {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
           </div>
 
           <div className="glass p-6 text-sm text-muted">
-            <p className="flex justify-between"><span>Formateur</span><span className="text-white">{course.instructor_name || "—"}</span></p>
-            <p className="mt-2 flex justify-between"><span>Niveau</span><span className="text-white">{LEVELS[course.level] || course.level}</span></p>
-            <p className="mt-2 flex justify-between"><span>Durée</span><span className="text-white">{course.duration_hours || "—"} h</span></p>
-            <p className="mt-2 flex justify-between"><span>Note</span><span className="text-white">⭐ {course.rating ? course.rating.toFixed(1) : "—"} ({course.review_count ?? 0})</span></p>
+            <p className="flex justify-between"><span>Formateur</span><span className="text-ink-deep">{course.instructor_name || "—"}</span></p>
+            <p className="mt-2 flex justify-between"><span>Niveau</span><span className="text-ink-deep">{LEVELS[course.level] || course.level}</span></p>
+            <p className="mt-2 flex justify-between"><span>Durée</span><span className="text-ink-deep">{course.duration_hours || "—"} h</span></p>
+            <p className="mt-2 flex justify-between"><span>Note</span><span className="text-ink-deep">⭐ {course.rating ? course.rating.toFixed(1) : "—"} ({course.review_count ?? 0})</span></p>
           </div>
 
           <button className="btn-ghost w-full" onClick={review}>Laisser un avis ★★★★★</button>

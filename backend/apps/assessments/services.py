@@ -69,4 +69,5 @@ def _touch_skill(user, quiz):
     )
     usk, _ = UserSkill.objects.get_or_create(user=user, skill=skill)
     usk.mastery_score = min(100, usk.mastery_score + 5)
-    usk.save()
+    usk.confidence = min(1.0, usk.confidence + 0.05)
+    usk.save(update_fields=["mastery_score", "confidence", "last_assessed_at"])

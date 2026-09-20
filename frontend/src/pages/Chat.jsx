@@ -57,8 +57,8 @@ export default function Chat() {
             onClick={() => setAgentId(agent.id)}
             className={`rounded-xl border px-4 py-2 text-sm transition ${
               agentId === agent.id
-                ? "border-brand bg-brand/15 text-white"
-                : "border-line bg-white/5 text-muted hover:text-white"
+                ? "border-brand bg-brand/15 text-brand"
+                : "border-line bg-paper text-muted hover:text-ink-deep"
             }`}
           >
             {agent.name}
@@ -77,14 +77,14 @@ export default function Chat() {
           {messages.map((m, i) => (
             <div key={i} className={`max-w-[85%] rounded-xl px-4 py-3 text-sm whitespace-pre-wrap ${
               m.role === "user"
-                ? "ml-auto bg-brand/20 text-white"
-                : "border border-line bg-panel-2 text-muted"
+                ? "ml-auto bg-brand text-white"
+                : "border border-line bg-paper-soft text-ink-deep"
             }`}>
               {m.content}
             </div>
           ))}
           {busy && <p className="text-sm text-glow">… {agents.find((a) => a.id === agentId)?.name} réfléchit</p>}
-          {error && <p className="text-sm text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-rose-600">{error}</p>}
         </div>
 
         <div className="border-t border-line p-4">

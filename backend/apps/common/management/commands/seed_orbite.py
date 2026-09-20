@@ -208,7 +208,16 @@ QUIZZES = [
     }
 ]
 
-SKILLS = ["Python", "Django", "REST API", "React", "SEO", "Business Model", "UX / UI", "JavaScript"]
+SKILLS = [
+    ("Python", "Backend", "Langage de programmation généraliste, base du backend ORBITE."),
+    ("Django", "Backend", "Framework web Python : modèles, vues, API et sécurité."),
+    ("REST API", "Backend", "Conception et consommation d'APIs REST (sérialisation, authentification)."),
+    ("React", "Frontend", "Interface utilisateur : composants, hooks et état."),
+    ("JavaScript", "Frontend", "Langage du web : ES6+, asynchrone et DOM."),
+    ("UX / UI", "Design", "Expérience et interface utilisateur : hiérarchie, lisibilité, identité."),
+    ("SEO", "Marketing", "Optimisation pour les moteurs de recherche et visibilité."),
+    ("Business Model", "Business", "Modèle économique, valeur, canaux et monétisation."),
+]
 
 
 class Command(BaseCommand):
@@ -339,8 +348,11 @@ class Command(BaseCommand):
     def _ensure_skills(self):
         from apps.learning.models import Skill
 
-        for skill_name in SKILLS:
-            Skill.objects.get_or_create(slug=skill_name.lower().replace(" ", "-"), defaults={"name": skill_name})
+        for skill_name, category, description in SKILLS:
+            Skill.objects.update_or_create(
+                slug=skill_name.lower().replace(" ", "-"),
+                defaults={"name": skill_name, "category": category, "description": description},
+            )
         self.stdout.write("  ✓ compétences")
 
     def _ensure_coupons(self):

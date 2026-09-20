@@ -54,7 +54,7 @@ export default function Register() {
         </div>
         <input className="input" type="password" placeholder="Mot de passe" value={form.password} onChange={set("password")} autoComplete="new-password" required />
         <input className="input" type="password" placeholder="Confirmer le mot de passe" value={form.password2} onChange={set("password2")} autoComplete="new-password" required />
-        {error && <p className="text-sm text-rose-400">{error}</p>}
+        {error && <p className="text-sm text-rose-600">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Création…" : "Créer mon compte"}</button>
         <p className="text-center text-sm text-muted">
           Déjà inscrit ? <Link to="/login" className="link">Connexion</Link>

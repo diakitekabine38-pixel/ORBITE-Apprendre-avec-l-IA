@@ -3,9 +3,9 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.ai.models import AIMessage, AISession, Recommendation
-from apps.ai.services import AIOrchestrator
+from apps.ai.services import AIOrchestrator, ContextBuilder
 from apps.common.tests import make_agent, make_course, make_user
-from apps.learning.models import Enrollment
+from apps.learning.models import Enrollment, Skill, UserSkill
 
 
 class OrchestratorTests(TestCase):
@@ -28,6 +28,25 @@ class OrchestratorTests(TestCase):
         )
         self.assertTrue(answer)
         self.assertTrue(session.agent_id == self.agent.id)
+
+    def test_context_builder_injects_skills_and_lesson(self):
+        course = make_course(instructor=make_user("prof_cb", role="instructor"), title="Context Builder")
+        module = course.modules.first()
+        lesson = module.lessons.first()
+        lesson.content = "Le contenu exact de la leçon : les boucles en Python."
+        lesson.save()
+        skill = Skill.objects.create(name="Python", slug="python", category="Backend")
+        UserSkill.objects.create(
+            user=self.student, skill=skill, mastery_score=25, confidence=0.3
+        )
+        session = AISession.objects.create(
+            user=self.student, agent=self.agent, course=course, lesson=lesson
+        )
+        context = ContextBuilder(self.student, session, self.agent).build()
+        self.assertIn("le contenu exact de la leçon", context.lower())
+        self.assertIn("points forts", context.lower())
+        self.assertIn("compétences à renforcer", context.lower())
+        self.assertIn("python", context.lower())
 
 
 class ChatApiTests(APITestCase):
@@ -64,6 +83,27 @@ class ChatApiTests(APITestCase):
         self.client.credentials()
         response = self.client.get("/api/v1/ai/agents/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_ask_binds_session_to_course_and_lesson(self):
+        from apps.courses.models import Lesson
+
+        course = make_course(instructor=make_user("prof_ask", role="instructor"), title="Session liée")
+        lesson = Lesson.objects.first() or course.modules.first().lessons.first()
+        self.client.force_authenticate(self.student)
+        response = self.client.post(
+            "/api/v1/ai/sessions/ask/",
+            {
+                "content": "Aide-moi sur cette leçon.",
+                "agent_id": self.agent.id,
+                "course_id": course.id,
+                "lesson_id": lesson.id,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        session = AISession.objects.get(pk=response.data["session"]["id"])
+        self.assertEqual(session.course_id, course.id)
+        self.assertEqual(session.lesson_id, lesson.id)
 
 
 class RecommendationTests(APITestCase):

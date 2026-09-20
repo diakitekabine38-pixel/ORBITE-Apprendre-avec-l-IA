@@ -69,12 +69,12 @@ export default function Dashboard() {
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold leading-snug">{enr.course.title}</h3>
                 {enr.completed ? (
-                  <span className="badge !border-emerald-400/40 !text-emerald-300">Terminée</span>
+                  <span className="badge !border-emerald-600/40 !text-emerald-700">Terminée</span>
                 ) : (
                   <span className="badge">En cours</span>
                 )}
               </div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/5">
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink/10">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-brand to-glow transition-all"
                   style={{ width: `${Math.min(100, Math.round(enr.progress || 0))}%` }}

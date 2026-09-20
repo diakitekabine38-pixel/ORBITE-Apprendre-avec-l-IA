@@ -26,7 +26,7 @@ export default function Home() {
   return (
     <div>
       <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,92,255,.18),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,.12),transparent_50%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,.16),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(124,58,237,.10),transparent_50%)]" />
         <div className="relative mx-auto max-w-6xl px-4 pt-20 pb-16 text-center">
           <span className="badge mb-6">Piloté par l'IA · 6 coachs dédiés</span>
           <h1 className="mx-auto max-w-3xl text-4xl leading-tight font-bold tracking-tight sm:text-6xl">

@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.common.permissions import IsAdminOrOwner
-from apps.courses.models import Course
+from apps.courses.models import Course, Lesson
 
 from . import services
 from .models import AIAgent, AISession, Recommendation
@@ -46,6 +46,12 @@ class ChatViewSet(viewsets.ModelViewSet):
                 status=Course.STATUS_PUBLISHED,
             ).first()
 
+        lesson = None
+        if serializer.validated_data.get("lesson_id"):
+            lesson = Lesson.objects.filter(
+                id=serializer.validated_data["lesson_id"]
+            ).first()
+
         initial_agent = None
         if serializer.validated_data.get("agent_id"):
             initial_agent = AIAgent.objects.filter(
@@ -60,11 +66,11 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         orchestrator = services.AIOrchestrator(request.user, session)
         orchestrator.session, answer = orchestrator.reply(
-            serializer.validated_data["content"], agent=initial_agent
+            serializer.validated_data["content"],
+            agent=initial_agent,
+            course=course,
+            lesson=lesson,
         )
-        if course and orchestrator.session.course_id is None:
-            orchestrator.session.course = course
-            orchestrator.session.save(update_fields=["course", "updated_at"])
 
         session_serializer = AISessionSerializer(orchestrator.session)
         return Response(

@@ -1,24 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #08090d;
-  --color-panel: #0e1116;
-  --color-panel-2: #131722;
-  --color-brand: #7c5cff;
-  --color-brand-soft: #a78bfa;
-  --color-glow: #22d3ee;
-  --color-muted: #9aa3b2;
-  --color-line: rgba(255, 255, 255, 0.08);
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* === ORBITE Brand Book — thème ivoire clair === */
+  --color-ivory: #f4efe3;
+  --color-ivory-soft: #ece5d5;
+  --color-ivory-warm: #e8dfc9;
+  --color-paper: #fffcf5;
+  --color-paper-soft: #faf6ec;
+
+  /* surfaces/alias — le vocabulaire des composants reste stable */
+  --color-ink: #f4efe3; /* fond de page */
+  --color-ink-deep: #1a0f2e; /* texte principal */
+  --color-panel: #fffcf5; /* cartes */
+  --color-panel-2: #faf6ec; /* inputs/surfaces internes */
+
+  /* violet orbital — marque */
+  --color-brand: #7c3aed; /* orbital-600 */
+  --color-brand-soft: #8b5cf6; /* orbital-500 */
+  --color-glow: #6d28d9; /* orbital-700 — accents, liens */
+
+  --color-muted: #8b7fa3; /* ink-muted */
+  --color-line: rgba(26, 15, 46, 0.1);
+
+  /* formateurs IA (Brand Book §Formateurs) */
+  --color-kodex: #2563eb;
+  --color-kora: #ec4899;
+  --color-nova: #f59e0b;
+  --color-pixel: #8b5cf6;
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --shadow-card: 0 4px 24px rgba(26, 15, 46, 0.06);
+  --shadow-card-hover: 0 12px 40px rgba(26, 15, 46, 0.12);
+  --shadow-elevated: 0 24px 60px rgba(26, 15, 46, 0.15);
 }
 
 html {
-  background: #08090d;
+  background: #f4efe3;
 }
 
 body {
-  @apply bg-ink text-white font-sans antialiased;
+  @apply bg-ink text-ink-deep font-sans antialiased;
 }
 
 .glass {
@@ -30,19 +54,19 @@ body {
 }
 
 .btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-paper px-5 py-2.5 text-sm font-medium text-ink-deep transition hover:bg-ivory-soft;
 }
 
 .input {
-  @apply w-full rounded-xl border border-line bg-panel-2 px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20;
+  @apply w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm text-ink-deep placeholder:text-muted outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20;
 }
 
 .badge {
-  @apply inline-flex items-center gap-1 rounded-full border border-line bg-white/5 px-3 py-1 text-xs font-medium text-muted;
+  @apply inline-flex items-center gap-1 rounded-full border border-line bg-paper-soft px-3 py-1 text-xs font-medium text-muted;
 }
 
 .link {
-  @apply text-glow hover:underline;
+  @apply text-brand hover:underline;
 }
 
 h1,

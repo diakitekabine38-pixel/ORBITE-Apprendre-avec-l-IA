@@ -4,22 +4,22 @@ import { useAuth } from "../auth";
 function Orbits() {
   return (
     <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
-      <circle cx="17" cy="17" r="4" fill="#7C5CFF" />
-      <ellipse cx="17" cy="17" rx="14" ry="5.5" stroke="#22D3EE" strokeWidth="1.5" transform="rotate(-18 17 17)" />
-      <ellipse cx="17" cy="17" rx="14" ry="5.5" stroke="#7C5CFF" strokeWidth="1.5" opacity=".5" transform="rotate(45 17 17)" />
+      <circle cx="17" cy="17" r="4" fill="#7C3AED" />
+      <ellipse cx="17" cy="17" rx="14" ry="5.5" stroke="#8B5CF6" strokeWidth="1.5" transform="rotate(-18 17 17)" />
+      <ellipse cx="17" cy="17" rx="14" ry="5.5" stroke="#A78BFA" strokeWidth="1.5" opacity=".5" transform="rotate(45 17 17)" />
     </svg>
   );
 }
 
 const navLink = ({ isActive }) =>
-  `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-white bg-white/5" : "text-muted hover:text-white"}`;
+  `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-brand bg-ivory-soft" : "text-muted hover:text-ink-deep"}`;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-ink/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-line bg-ivory/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-700">
           <Orbits />
@@ -41,7 +41,7 @@ export default function Navbar() {
               <Link to="/panier" className="btn-ghost !px-3 !py-2" aria-label="Panier">🛒</Link>
               <span className="hidden text-sm text-muted sm:block">
                 {user.first_name || user.username}
-                <span className="ml-2 rounded-full bg-brand/15 px-2 py-0.5 text-xs text-brand-soft">
+                <span className="ml-2 rounded-full bg-brand/15 px-2 py-0.5 text-xs text-brand">
                   Nv.{user.level} · {user.xp} XP
                 </span>
               </span>
