@@ -60,5 +60,5 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class CheckoutSerializer(serializers.Serializer):
     course_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
-    coupon_code = serializers.CharField(required=False, allow_blank=True)
+    coupon_code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     payment_method = serializers.CharField(required=False, default="manual")

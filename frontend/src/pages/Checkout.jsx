@@ -31,7 +31,7 @@ export default function Checkout() {
       const courseIds = itemCards.map((i) => i.course_id ?? i.course);
       const created = await apiPost("/orders/checkout/", {
         course_ids: courseIds,
-        coupon_code: coupon || null,
+        coupon_code: coupon.trim() || "",
       });
       const started = await apiPost("/payments/payments/start/", {
         order_reference: created.reference,
