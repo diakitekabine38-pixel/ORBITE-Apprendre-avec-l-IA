@@ -1,18 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiGet } from "../api";
 import { useAuth } from "../auth";
 import ResendVerification from "../components/ResendVerification";
 
 export default function VerifyEmail() {
   const { token } = useParams();
-  const { user } = useAuth();
+  const { user, enterSession } = useAuth();
+  const navigate = useNavigate();
   const [state, setState] = useState("loading"); // loading | ok | error
 
   useEffect(() => {
     let alive = true;
     apiGet(`/auth/verify-email/${token}/`)
-      .then(() => alive && setState("ok"))
+      .then(async (data) => {
+        if (data.access && data.refresh) {
+          const me = await enterSession(data);
+          if (alive) navigate(["admin", "super_admin"].includes(me?.role) ? "/admin/agents" : "/dashboard", { replace: true });
+          return;
+        }
+        if (alive) setState("ok");
+      })
       .catch(() => alive && setState("error"));
     return () => {
       alive = false;

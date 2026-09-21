@@ -28,6 +28,10 @@ export function AuthProvider({ children }) {
 
   async function login(username, password) {
     const data = await apiPost("/auth/login/", { username, password });
+    return enterSession(data);
+  }
+
+  async function enterSession(data) {
     tokens.set(data.access, data.refresh);
     const me = await apiGetMe();
     setUser(me);
@@ -46,7 +50,23 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  const value = useMemo(() => ({ user, loading, login, register, logout, refresh: apiGetMe }), [user, loading]);
+  useEffect(() => {
+    function onStorage(e) {
+      if (e.storageArea !== localStorage || !(e.key || "").startsWith("orbite.")) return;
+      if (tokens.access) {
+        apiGetMe().then(setUser).catch(() => tokens.clear());
+      } else {
+        setUser(null);
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout, enterSession, refresh: apiGetMe }),
+    [user, loading]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

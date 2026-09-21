@@ -191,6 +191,14 @@ class EmailVerificationTests(APITestCase):
         self.assertTrue(user.email_verified)
         self.assertTrue(user.is_active, "la vérification rend le compte actif")
         self.assertEqual(user.email_verification_token, "")
+        self.assertIn("access", response.data, "connexion immédiate attendue")
+        self.assertIn("refresh", response.data)
+        me = self.client.get(
+            "/api/v1/auth/me/",
+            HTTP_AUTHORIZATION=f"Bearer {response.data['access']}",
+        )
+        self.assertEqual(me.status_code, status.HTTP_200_OK)
+        self.assertEqual(me.data["email"], user.email)
 
     def test_verify_email_invalid_token(self):
         response = self.client.get("/api/v1/auth/verify-email/nope/")

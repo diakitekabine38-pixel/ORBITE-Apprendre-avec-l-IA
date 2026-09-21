@@ -9,6 +9,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.common.permissions import IsAdminUser, IsOwnerOrReadOnly
 
@@ -54,7 +55,15 @@ class VerifyEmailView(APIView):
         user.save(
             update_fields=["email_verified", "email_verification_token", "is_active"]
         )
-        return Response({"detail": "Email vérifié."})
+        # Connexion immédiate : l'utilisateur arrive connecté depuis Gmail.
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "detail": "Email vérifié.",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }
+        )
 
 
 class ResendVerificationView(APIView):
