@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, apiPost, money } from "../api";
+import { useCart } from "../cart";
 
 export default function Cart() {
   const [cart, setCart] = useState(null);
+  const { refresh: refreshCart } = useCart();
 
   const load = useCallback(async () => {
     const data = await api("/cart/summary/").catch(() => null);
@@ -17,6 +19,7 @@ export default function Cart() {
   async function remove(courseId) {
     const data = await apiPost("/cart/remove/", { course_id: courseId }).catch(() => null);
     setCart(data || cart);
+    refreshCart();
   }
 
   if (!cart) return <div className="mx-auto max-w-4xl px-4 py-16 text-muted">Chargement du panier…</div>;

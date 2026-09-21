@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, apiPost, money } from "../api";
 import { useAuth } from "../auth";
+import { useCart } from "../cart";
 
 const LEVELS = { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" };
 
 export default function CourseDetail() {
   const { slug } = useParams();
   const { user } = useAuth();
+  const { refresh: refreshCart } = useCart();
   const navigate = useNavigate();
 
   const [course, setCourse] = useState(null);
@@ -40,6 +42,7 @@ export default function CourseDetail() {
     setError("");
     try {
       await apiPost("/cart/add/", { course_id: course.id });
+      refreshCart();
       navigate("/panier");
     } catch (e) {
       setError(e.message);

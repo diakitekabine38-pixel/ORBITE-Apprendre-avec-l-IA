@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../auth";
+import { useCart } from "../cart";
 
 function TabIcon({ label }) {
   const icons = {
@@ -7,7 +8,6 @@ function TabIcon({ label }) {
     Catalogue: "📚",
     "Coach IA": "✨",
     "Mon Espace": "📊",
-    Certificats: "🎓",
     Panier: "🛒",
     Connexion: "🔑",
   };
@@ -16,6 +16,7 @@ function TabIcon({ label }) {
 
 export default function MobileTabBar() {
   const { user } = useAuth();
+  const { cartCount } = useCart();
   const location = useLocation();
 
   const items = [
@@ -25,7 +26,7 @@ export default function MobileTabBar() {
     ...(user
       ? [
           { to: "/dashboard", label: "Mon Espace" },
-          { to: "/certificats", label: "Certificats" },
+          { to: "/panier", label: "Panier" },
         ]
       : [{ to: "/login", label: "Connexion" }]),
   ];
@@ -55,6 +56,11 @@ export default function MobileTabBar() {
                 <TabIcon label={item.label} />
                 {item.highlight && !isActive && (
                   <span className="absolute -top-0.5 -right-1.5 h-2 w-2 animate-pulse rounded-full bg-cyan-400" />
+                )}
+                {item.label === "Panier" && cartCount > 0 && (
+                  <span className="animate-scale-in absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-glow px-1 text-[9px] font-bold text-white shadow-md">
+                    {cartCount}
+                  </span>
                 )}
               </span>
               <span className="max-w-full truncate text-[10px] tracking-tight">
