@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import MobileTabBar from "./components/MobileTabBar";
 import Private from "./components/Private";
 import Home from "./pages/Home";
 import Catalog from "./pages/Catalog";
@@ -22,7 +23,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pb-20 lg:pb-0">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/catalogue" element={<Catalog />} />
@@ -84,6 +85,7 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+      <MobileTabBar />
     </div>
   );
 }

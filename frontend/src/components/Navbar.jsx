@@ -12,12 +12,9 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-ivory/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-        <Link to="/" className="flex shrink-0 items-center gap-2">
-          <img
-            src="/orbite-logo.png"
-            alt="ORBITE"
-            className="h-9 w-auto"
-          />
+        <Link to="/" className="flex shrink-0 items-center gap-2 font-display">
+          <img src="/logo.svg" alt="ORBITE" className="h-9 w-9" />
+          <span className="text-lg font-semibold tracking-tight">ORBITE</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
