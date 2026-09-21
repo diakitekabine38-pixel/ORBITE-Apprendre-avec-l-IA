@@ -50,29 +50,31 @@ class VerifyEmailView(APIView):
             )
         user.email_verified = True
         user.email_verification_token = ""
-        user.save(update_fields=["email_verified", "email_verification_token"])
+        user.is_active = True
+        user.save(
+            update_fields=["email_verified", "email_verification_token", "is_active"]
+        )
         return Response({"detail": "Email vérifié."})
 
 
 class ResendVerificationView(APIView):
-    permission_classes = [IsAuthenticated]
-    throttle_key_prefix = "resend_verification"
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        if request.user.email_verified:
-            return Response(
-                {"detail": "Ton adresse email est déjà vérifiée."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        key = f"resend_verification_{request.user.id}"
-        if cache.get(key):
-            return Response(
-                {"detail": "Un lien a déjà été envoyé. Réessaie dans une minute."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS,
-            )
-        send_verification_email(request.user)
-        cache.set(key, True, 60)
-        return Response({"detail": "Lien de vérification renvoyé."})
+        email = (request.data.get("email") or "").strip().lower()
+        # Non-révélateur : la réponse est identique que le compte existe ou non.
+        user = User.objects.filter(email__iexact=email).first()
+        if user and not user.email_verified:
+            key = f"resend_verification_{user.id}"
+            if not cache.get(key):
+                send_verification_email(user)
+                cache.set(key, True, 60)
+        return Response(
+            {
+                "detail": "Si un compte avec cette adresse email existe et n'est "
+                "pas encore confirmé, un nouveau lien de vérification vient d'être envoyé."
+            }
+        )
 
 
 class MeView(APIView):

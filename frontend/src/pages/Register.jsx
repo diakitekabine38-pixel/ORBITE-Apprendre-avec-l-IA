@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import ResendVerification from "../components/ResendVerification";
 
 export default function Register() {
   const { register } = useAuth();
@@ -51,12 +52,15 @@ export default function Register() {
           </p>
           <div className="rounded-xl border border-amber-300/40 bg-amber-300/10 p-3 text-left text-xs text-muted">
             <p className="font-semibold text-amber-700">Tu ne reçois rien ?</p>
-            <p className="mt-1">
+            <p className="mt-1 mb-3">
               Vérifie d'abord ton dossier <strong>Spam / courriers indésirables</strong> —
-              les emails de confirmation s'y retrouvent parfois. Sinon, renvoie le lien
-              depuis ton tableau de bord une fois connecté.
+              les emails de confirmation s'y retrouvent parfois.
             </p>
+            <ResendVerification defaultEmail={form.email} />
           </div>
+          <p className="text-sm text-muted">
+            Tu pourras te connecter dès que ton adresse sera confirmée.
+          </p>
           <button className="btn-primary w-full" onClick={() => navigate("/login")}>
             Aller à la connexion
           </button>

@@ -30,6 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True)
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
+    email = serializers.EmailField()
 
     class Meta:
         model = User
@@ -47,13 +48,39 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"password2": "Les deux mots de passe ne correspondent pas."}
             )
+        existing = User.objects.filter(email__iexact=attrs["email"]).first()
+        if existing and existing.email_verified:
+            raise serializers.ValidationError(
+                {"email": "Un compte actif utilise déjà cette adresse email."}
+            )
         return attrs
 
     def create(self, validated):
         validated.pop("password2")
         password = validated.pop("password")
-        user = User(**validated)
+        email = validated.pop("email")
+        # Un email jamais confirmé : on réutilise le compte existant pour ne
+        # pas révéler son existence, on renouvelle les identifiants et on
+        # renvoie un lien de vérification.
+        user = (
+            User.objects.filter(email__iexact=email, email_verified=False)
+            .order_by("id")
+            .first()
+        )
+        if user:
+            for field, value in validated.items():
+                setattr(user, field, value)
+            user.email = email
+            user.email_verified = False
+            user.email_verification_token = ""
+            user.is_active = False
+            user.role = User.ROLE_STUDENT
+            user.set_password(password)
+            user.save()
+            return user
+        user = User(email=email, **validated)
         user.set_password(password)
+        user.is_active = False
         user.role = User.ROLE_STUDENT
         user.save()
         return user

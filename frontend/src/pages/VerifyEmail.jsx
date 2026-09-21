@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiGet } from "../api";
 import { useAuth } from "../auth";
+import ResendVerification from "../components/ResendVerification";
 
 export default function VerifyEmail() {
   const { token } = useParams();
@@ -46,6 +47,7 @@ export default function VerifyEmail() {
             <p className="text-sm text-muted">
               Ce lien de vérification est invalide ou a déjà été utilisé.
             </p>
+            <ResendVerification />
             <Link to="/login" className="btn-ghost block w-full text-center">
               Se connecter
             </Link>
