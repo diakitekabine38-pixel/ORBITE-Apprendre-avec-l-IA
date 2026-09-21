@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, apiPost } from "../api";
+import Markdown from "../components/Markdown";
 
 export default function Learn() {
   const { slug } = useParams();
@@ -261,6 +262,12 @@ function MentorPanel({ mentor, ready, lesson, busy, error, messages, input, onIn
         lessonEx ? "Prépare-moi au quiz de cette leçon" : "Résume-moi l'essentiel de cette leçon",
       ]
     : ["Explique-moi simplement", "Donne-moi un exemple concret"];
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, busy]);
 
   return (
     <div className="glass flex max-h-[560px] flex-col">
@@ -274,7 +281,7 @@ function MentorPanel({ mentor, ready, lesson, busy, error, messages, input, onIn
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
         {!ready ? (
           <p className="pt-6 text-center text-sm text-muted">
             Ouvre une leçon pour que ton coach te guide avec le bon contexte.
@@ -299,11 +306,11 @@ function MentorPanel({ mentor, ready, lesson, busy, error, messages, input, onIn
           messages.map((m, i) => (
             <div
               key={i}
-              className={`max-w-[90%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${
-                m.role === "user" ? "ml-auto bg-brand text-white" : "border border-line bg-paper-soft text-ink-deep"
+              className={`max-w-[90%] rounded-xl px-3 py-2 text-sm ${
+                m.role === "user" ? "ml-auto whitespace-pre-wrap bg-brand text-white" : "border border-line bg-paper-soft"
               }`}
             >
-              {m.content}
+              {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
             </div>
           ))
         )}

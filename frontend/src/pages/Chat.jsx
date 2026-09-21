@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiPost } from "../api";
+import Markdown from "../components/Markdown";
 
 export default function Chat() {
   const [agents, setAgents] = useState([]);
@@ -8,6 +9,12 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, busy]);
 
   useEffect(() => {
     api("/ai/agents/")
@@ -67,20 +74,20 @@ export default function Chat() {
         ))}
       </div>
 
-      <div className="glass mt-6 flex min-h-[45vh] flex-col">
-        <div className="flex-1 space-y-4 overflow-y-auto p-5">
+<div className="glass mt-6 flex h-[70vh] flex-col">
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
           {messages.length === 0 && (
             <p className="pt-10 text-center text-muted">
               {agents.length ? `Discute avec ${agents.find((a) => a.id === agentId)?.name || "ton coach"}.` : "Chargement des coachs…"}
             </p>
           )}
           {messages.map((m, i) => (
-            <div key={i} className={`max-w-[85%] rounded-xl px-4 py-3 text-sm whitespace-pre-wrap ${
+            <div key={i} className={`max-w-[85%] rounded-xl px-4 py-3 text-sm ${
               m.role === "user"
-                ? "ml-auto bg-brand text-white"
-                : "border border-line bg-paper-soft text-ink-deep"
+                ? "ml-auto whitespace-pre-wrap bg-brand text-white"
+                : "border border-line bg-paper-soft"
             }`}>
-              {m.content}
+              {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
             </div>
           ))}
           {busy && <p className="text-sm text-glow">… {agents.find((a) => a.id === agentId)?.name} réfléchit</p>}
