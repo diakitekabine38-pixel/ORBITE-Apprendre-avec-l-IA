@@ -2,16 +2,6 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import ThemeToggle from "./ThemeToggle";
 
-function Orbits() {
-  return (
-    <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
-      <circle cx="17" cy="17" r="4" fill="#7C3AED" />
-      <ellipse cx="17" cy="17" rx="14" ry="5.5" stroke="#8B5CF6" strokeWidth="1.5" transform="rotate(-18 17 17)" />
-      <ellipse cx="17" cy="17" rx="14" ry="5.5" stroke="#A78BFA" strokeWidth="1.5" opacity=".5" transform="rotate(45 17 17)" />
-    </svg>
-  );
-}
-
 const navLink = ({ isActive }) =>
   `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-brand bg-ivory-soft" : "text-muted hover:text-ink-deep"}`;
 
@@ -22,11 +12,12 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-ivory/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2 font-display text-lg font-700">
-          <Orbits />
-          <span className="font-semibold tracking-tight">
-            ORBITE
-          </span>
+        <Link to="/" className="flex shrink-0 items-center gap-2">
+          <img
+            src="/orbite-logo.png"
+            alt="ORBITE"
+            className="h-9 w-auto"
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
