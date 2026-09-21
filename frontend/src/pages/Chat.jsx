@@ -5,6 +5,7 @@ import Markdown from "../components/Markdown";
 export default function Chat() {
   const [agents, setAgents] = useState([]);
   const [agentId, setAgentId] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,7 +22,23 @@ export default function Chat() {
       .then((d) => {
         const list = d.results || [];
         setAgents(list);
-        if (list.length) setAgentId(list[0].id);
+        if (!list.length) return;
+        const first = list[0].id;
+        setAgentId(first);
+        // Reprend la dernière conversation ouverte du coach (pour ne pas oublier).
+        return api("/ai/sessions/").then((sd) => {
+          const match = (sd.results || []).find(
+            (s) => s.status === "open" && s.agent && s.agent.id === first
+          );
+          if (!match) return;
+          setSessionId(match.id);
+          setMessages(
+            (match.messages || []).map((m) => ({
+              role: m.role === "user" ? "user" : "assistant",
+              content: m.content,
+            }))
+          );
+        });
       })
       .catch(() => {});
   }, []);
@@ -34,14 +51,24 @@ export default function Chat() {
     setBusy(true);
     setMessages((prev) => [...prev, { role: "user", content }]);
     try {
-      const res = await apiPost("/ai/sessions/ask/", { content, agent_id: agentId });
+      const payload = { content, agent_id: agentId };
+      if (sessionId) payload.session_id = sessionId;
+      const res = await apiPost("/ai/sessions/ask/", payload);
+      setSessionId(res.session.id);
       setMessages((prev) => [...prev, { role: "assistant", content: res.answer }]);
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
-  }, [input, busy, agentId]);
+  }, [input, busy, agentId, sessionId]);
+
+  const pickAgent = (id) => {
+    setAgentId(id);
+    setSessionId(null);
+    setMessages([]);
+    setError("");
+  };
 
   const onEnter = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -61,7 +88,7 @@ export default function Chat() {
         {agents.map((agent) => (
           <button
             key={agent.id}
-            onClick={() => setAgentId(agent.id)}
+            onClick={() => pickAgent(agent.id)}
             className={`rounded-xl border px-4 py-2 text-sm transition ${
               agentId === agent.id
                 ? "border-brand bg-brand/15 text-brand"

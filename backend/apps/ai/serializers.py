@@ -65,6 +65,7 @@ class ChatPromptSerializer(serializers.Serializer):
     agent_id = serializers.IntegerField(required=False)
     course_id = serializers.IntegerField(required=False)
     lesson_id = serializers.IntegerField(required=False)
+    session_id = serializers.IntegerField(required=False, allow_null=True)
 
 
 class RecommendationSerializer(serializers.ModelSerializer):

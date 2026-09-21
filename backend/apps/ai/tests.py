@@ -105,6 +105,61 @@ class ChatApiTests(APITestCase):
         self.assertEqual(session.course_id, course.id)
         self.assertEqual(session.lesson_id, lesson.id)
 
+    def test_ask_continues_same_session_with_session_id(self):
+        self.client.force_authenticate(self.student)
+        first = self.client.post(
+            "/api/v1/ai/sessions/ask/",
+            {"content": "Je débute en Python, par où commencer ?", "agent_id": self.agent.id},
+            format="json",
+        )
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        session_id = first.data["session"]["id"]
+        self.assertEqual(AIMessage.objects.filter(session_id=session_id).count(), 2)
+
+        second = self.client.post(
+            "/api/v1/ai/sessions/ask/",
+            {
+                "content": "Et maintenant, qu'est-ce qu'une boucle for ?",
+                "agent_id": self.agent.id,
+                "session_id": session_id,
+            },
+            format="json",
+        )
+        self.assertEqual(second.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            second.data["session"]["id"], session_id,
+            "la seconde question doit poursuivre la même conversation",
+        )
+        self.assertEqual(
+            AIMessage.objects.filter(session_id=session_id).count(), 4,
+            "les deux tours (user + assistant) s'accumulent dans la session",
+        )
+        history = list(
+            AIMessage.objects.filter(session_id=session_id).order_by("id").values_list("role", "content")
+        )
+        self.assertEqual(history[0][0], "user")
+        self.assertEqual(history[1][0], "assistant")
+        self.assertEqual(history[2][1], "Et maintenant, qu'est-ce qu'une boucle for ?")
+
+    def test_ask_ignores_foreign_session(self):
+        other = make_user("autre_chat")
+        foreign = AISession.objects.create(user=other, agent=self.agent, title="À toi")
+        self.client.force_authenticate(self.student)
+        response = self.client.post(
+            "/api/v1/ai/sessions/ask/",
+            {
+                "content": "Puis-je continuer ta conversation ?",
+                "agent_id": self.agent.id,
+                "session_id": foreign.id,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(
+            response.data["session"]["id"], foreign.id,
+            "une session d'un autre utilisateur ne doit pas être réutilisée",
+        )
+
 
 class RecommendationTests(APITestCase):
     def setUp(self):

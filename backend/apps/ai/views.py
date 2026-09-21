@@ -75,7 +75,16 @@ class ChatViewSet(viewsets.ModelViewSet):
             ).first()
 
         session = None
-        if course:
+        session_id = serializer.validated_data.get("session_id")
+        if session_id:
+            # Continuité explicite : l'utilisateur poursuit la conversation
+            # courante au lieu d'en créer une nouvelle (donc sans historique).
+            session = AISession.objects.filter(
+                id=session_id, user=request.user
+            ).first()
+            if session is None and request.user.is_admin():
+                session = AISession.objects.filter(id=session_id).first()
+        elif course:
             session = AISession.objects.filter(
                 user=request.user, course=course, status=AISession.STATUS_OPEN
             ).order_by("-updated_at").first()

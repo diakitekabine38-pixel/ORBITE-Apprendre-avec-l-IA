@@ -252,7 +252,7 @@ class AIOrchestrator:
             self.session.save(update_fields=fields)
 
         history = list(
-            self.session.messages.values_list("role", "content")[:10]
+            self.session.messages.order_by("id").values_list("role", "content")[:20]
         )
         system = f"{agent.system_prompt or agent.personality}\n{ContextBuilder(self.user, self.session, agent).build()}"
         messages = [{"role": role, "content": content} for role, content in history]
