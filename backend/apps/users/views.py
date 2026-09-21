@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db.models import Q
 from django.utils.crypto import get_random_string
 
@@ -19,6 +20,7 @@ from .serializers import (
     RoleSerializer,
     UserSerializer,
 )
+from .services import send_verification_email
 
 User = get_user_model()
 
@@ -30,6 +32,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        send_verification_email(user)
         return Response(
             UserSerializer(user).data, status=status.HTTP_201_CREATED
         )
@@ -49,6 +52,27 @@ class VerifyEmailView(APIView):
         user.email_verification_token = ""
         user.save(update_fields=["email_verified", "email_verification_token"])
         return Response({"detail": "Email vérifié."})
+
+
+class ResendVerificationView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_key_prefix = "resend_verification"
+
+    def post(self, request):
+        if request.user.email_verified:
+            return Response(
+                {"detail": "Ton adresse email est déjà vérifiée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        key = f"resend_verification_{request.user.id}"
+        if cache.get(key):
+            return Response(
+                {"detail": "Un lien a déjà été envoyé. Réessaie dans une minute."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        send_verification_email(request.user)
+        cache.set(key, True, 60)
+        return Response({"detail": "Lien de vérification renvoyé."})
 
 
 class MeView(APIView):

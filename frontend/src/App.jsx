@@ -7,6 +7,7 @@ import Catalog from "./pages/Catalog";
 import CourseDetail from "./pages/CourseDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
 import Dashboard from "./pages/Dashboard";
 import Learn from "./pages/Learn";
 import Chat from "./pages/Chat";
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/formations/:slug" element={<CourseDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/inscription" element={<Register />} />
+          <Route path="/verification-email/:token" element={<VerifyEmail />} />
           <Route
             path="/dashboard"
             element={

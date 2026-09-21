@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
 export default function Register() {
-  const { register, login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -14,6 +14,7 @@ export default function Register() {
     password: "",
     password2: "",
   });
+  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -30,13 +31,33 @@ export default function Register() {
     }
     try {
       await register(form);
-      await login(form.username, form.password);
-      navigate("/dashboard", { replace: true });
+      setDone(true);
     } catch (err) {
       setError(err.message);
     } finally {
       setBusy(false);
     }
+  }
+
+  if (done) {
+    return (
+      <div className="mx-auto grid min-h-[70vh] max-w-6xl place-items-center px-4">
+        <div className="glass w-full max-w-md space-y-4 p-8 text-center">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-brand/15 text-3xl text-brand-soft">📬</div>
+          <h1 className="text-2xl font-bold">Compte créé !</h1>
+          <p className="text-sm text-muted">
+            On vient de t'envoyer un lien de confirmation sur <strong>{form.email}</strong>.
+            Clique dessus pour valider ton adresse email.
+          </p>
+          <p className="text-xs text-muted">
+            Tu n'as rien reçu ? Vérifie tes spams ou renouvelle la demande après connexion.
+          </p>
+          <button className="btn-primary w-full" onClick={() => navigate("/login")}>
+            Aller à la connexion
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

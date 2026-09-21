@@ -1,7 +1,11 @@
+from django.contrib.auth import get_user_model
+from django.core import mail
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.common.tests import make_user
+
+User = get_user_model()
 
 
 class AuthTests(APITestCase):
@@ -65,6 +69,98 @@ class AuthTests(APITestCase):
         self.client.credentials()
         response = self.client.get("/api/v1/auth/me/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class EmailVerificationTests(APITestCase):
+    REGISTER = {
+        "username": "verif",
+        "email": "verif@orbite.test",
+        "first_name": "Awa",
+        "last_name": "Diallo",
+        "password": "StrongPass123!",
+        "password2": "StrongPass123!",
+    }
+
+    def setUp(self):
+        # TestCase flush la DB entre les tests mais pas le cache LocMem :
+        # les ids utilisateurs repartent de 1 et fausseraient le rate-limit.
+        from django.core.cache import cache
+
+        cache.clear()
+
+    def _register(self):
+        return self.client.post("/api/v1/auth/register/", self.REGISTER, format="json")
+
+    def test_register_issues_token_and_sends_email(self):
+        response = self._register()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(username="verif")
+        self.assertFalse(user.email_verified)
+        self.assertTrue(user.email_verification_token)
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertEqual(email.to, ["verif@orbite.test"])
+        self.assertIn("/verification-email/", email.body)
+
+    def test_verify_email_success(self):
+        user = make_user("verifuser")
+        user.email_verification_token = "token123"
+        user.save(update_fields=["email_verification_token"])
+        response = self.client.get("/api/v1/auth/verify-email/token123/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        self.assertEqual(user.email_verification_token, "")
+
+    def test_verify_email_invalid_token(self):
+        response = self.client.get("/api/v1/auth/verify-email/nope/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_email_idempotent_token_cleared(self):
+        user = make_user("verif2")
+        user.email_verification_token = "token456"
+        user.save(update_fields=["email_verification_token"])
+        self.client.get("/api/v1/auth/verify-email/token456/")
+        response = self.client.get("/api/v1/auth/verify-email/token456/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_resend_verification_authenticated(self):
+        user = make_user("resend")
+        response = self.client.post(
+            "/api/v1/auth/resend-verification/",
+            HTTP_AUTHORIZATION=f"Bearer {self._token(user)}",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        user.refresh_from_db()
+        self.assertTrue(user.email_verification_token)
+
+    def test_resend_verification_rate_limited(self):
+        user = make_user("resend2")
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {self._token(user)}"}
+        first = self.client.post("/api/v1/auth/resend-verification/", **auth)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        second = self.client.post("/api/v1/auth/resend-verification/", **auth)
+        self.assertEqual(second.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_resend_verification_requires_auth(self):
+        response = self.client.post("/api/v1/auth/resend-verification/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_resend_verification_when_already_verified(self):
+        user = make_user("resend3")
+        user.email_verified = True
+        user.save(update_fields=["email_verified"])
+        response = self.client.post(
+            "/api/v1/auth/resend-verification/",
+            HTTP_AUTHORIZATION=f"Bearer {self._token(user)}",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _token(self, user):
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        return str(RefreshToken.for_user(user).access_token)
 
 
 class ProfileAndRolesTests(APITestCase):

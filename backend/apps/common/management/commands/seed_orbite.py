@@ -270,30 +270,40 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("ORBITE : données de base créées ✓"))
 
     def _ensure_users(self):
-        if not User.objects.filter(username="admin").exists():
-            admin = User.objects.create_superuser(
-                username="admin", email="admin@orbite.example", password="Admin123!"
-            )
-            admin.role = User.ROLE_SUPER_ADMIN
-            admin.save(update_fields=["role"])
-        if not User.objects.filter(username="formateur").exists():
-            trainer = User.objects.create_user(
-                username="formateur",
-                email="formateur@orbite.example",
-                password="Formateur123!",
-                first_name="Awa",
-                last_name="Keita",
-            )
-            trainer.role = User.ROLE_INSTRUCTOR
-            trainer.save(update_fields=["role"])
-        if not User.objects.filter(username="apprenant").exists():
-            User.objects.create_user(
-                username="apprenant",
-                email="apprenant@orbite.example",
-                password="Apprenant123!",
-                first_name="Kane",
-                last_name="Traoré",
-            )
+        demos = [
+            ("admin", "admin@orbite.example", "Admin123!"),
+            ("formateur", "formateur@orbite.example", "Formateur123!"),
+            ("apprenant", "apprenant@orbite.example", "Apprenant123!"),
+        ]
+        for username, email, password in demos:
+            user = User.objects.filter(username=username).first()
+            if user is None:
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    first_name={
+                        "apprenant": "Kane",
+                        "formateur": "Awa",
+                        "admin": "Admin",
+                    }[username],
+                    last_name={"apprenant": "Traoré", "formateur": "Keita", "admin": "ORBITE"}[
+                        username
+                    ],
+                )
+            if username == "admin":
+                user.is_staff = True
+                user.is_superuser = True
+            user.email = user.email or email
+            user.email_verified = True
+            user.email_verification_token = ""
+            user.save(update_fields=["email", "email_verified", "email_verification_token", "is_staff", "is_superuser"])
+        admin = User.objects.filter(username="admin").first()
+        admin.role = User.ROLE_SUPER_ADMIN
+        admin.save(update_fields=["role"])
+        trainer = User.objects.filter(username="formateur").first()
+        trainer.role = User.ROLE_INSTRUCTOR
+        trainer.save(update_fields=["role"])
         self.stdout.write("  ✓ utilisateurs (admin / formateur / apprenant)")
 
     def _ensure_agents(self):

@@ -206,12 +206,17 @@ if not DEBUG:
 # Rate limiting for sensitive endpoints handled at gateway/infra level.
 
 # ---------------------------------------------------------------------------
-# Email (dev console by default)
+# Email (dev console by default; SMTP via env)
 # ---------------------------------------------------------------------------
 EMAIL_BACKEND = os.environ.get(
     "ORBITE_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = os.environ.get("ORBITE_FROM_EMAIL", "orbite@orbite.example")
+EMAIL_HOST = os.environ.get("ORBITE_EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("ORBITE_EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("ORBITE_EMAIL_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("ORBITE_EMAIL_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("ORBITE_EMAIL_TLS", "1") == "1"
 
 # ---------------------------------------------------------------------------
 # ORBITE-specific business configuration

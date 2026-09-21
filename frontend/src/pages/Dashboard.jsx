@@ -7,6 +7,17 @@ export default function Dashboard() {
   const { user, refresh } = useAuth();
   const [data, setData] = useState(null);
   const [recs, setRecs] = useState([]);
+  const [resendMsg, setResendMsg] = useState("");
+
+  async function resend() {
+    setResendMsg("");
+    try {
+      await apiPost("/auth/resend-verification/");
+      setResendMsg("Lien renvoyé ! Vérifie ta boîte mail (et les spams).");
+    } catch (err) {
+      setResendMsg(err.message);
+    }
+  }
 
   useEffect(() => {
     api("/learning/enrollments/dashboard/")
@@ -49,6 +60,25 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {user && user.email_verified === false && (
+        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-amber-300/40 bg-amber-300/10 p-4">
+          <span className="text-2xl">⚠️</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-amber-700">Ton adresse email n'est pas encore vérifiée.</p>
+            {resendMsg ? (
+              <p className="text-sm text-amber-700">{resendMsg}</p>
+            ) : (
+              <p className="text-sm text-muted">
+                Vérifie ta boîte mail (et tes spams) ou renvoie le lien de confirmation.
+              </p>
+            )}
+          </div>
+          <button className="btn-ghost" onClick={resend}>
+            Renvoyer le lien
+          </button>
+        </div>
+      )}
 
       {data?.goals?.length > 0 && (
         <div className="glass mt-8 p-4">
