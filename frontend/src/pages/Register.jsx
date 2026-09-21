@@ -49,9 +49,14 @@ export default function Register() {
             On vient de t'envoyer un lien de confirmation sur <strong>{form.email}</strong>.
             Clique dessus pour valider ton adresse email.
           </p>
-          <p className="text-xs text-muted">
-            Tu n'as rien reçu ? Vérifie tes spams ou renouvelle la demande après connexion.
-          </p>
+          <div className="rounded-xl border border-amber-300/40 bg-amber-300/10 p-3 text-left text-xs text-muted">
+            <p className="font-semibold text-amber-700">Tu ne reçois rien ?</p>
+            <p className="mt-1">
+              Vérifie d'abord ton dossier <strong>Spam / courriers indésirables</strong> —
+              les emails de confirmation s'y retrouvent parfois. Sinon, renvoie le lien
+              depuis ton tableau de bord une fois connecté.
+            </p>
+          </div>
           <button className="btn-primary w-full" onClick={() => navigate("/login")}>
             Aller à la connexion
           </button>
