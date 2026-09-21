@@ -22,6 +22,10 @@
   --color-muted: #8b7fa3; /* ink-muted */
   --color-line: rgba(26, 15, 46, 0.1);
 
+  /* blocs de code (indépendants du mode) */
+  --color-code-bg: #1a0f2e;
+  --color-code-fg: #fffcf5;
+
   /* formateurs IA (Brand Book §Formateurs) */
   --color-kodex: #2563eb;
   --color-kora: #ec4899;
@@ -39,6 +43,35 @@
 
 html {
   background: #f4efe3;
+  color-scheme: light;
+}
+
+/* === Mode nuit — on surcharge les tokens du thème (pas de refonte des classes) === */
+html.dark {
+  background: #120d1e;
+  color-scheme: dark;
+}
+
+.dark {
+  --color-ivory: #120d1e;
+  --color-ivory-soft: #211a33;
+  --color-ivory-warm: #241d38;
+  --color-paper: #1a1430;
+  --color-paper-soft: #201a36;
+  --color-ink: #120d1e;
+  --color-ink-deep: #ece8f8;
+  --color-panel: #1a1430;
+  --color-panel-2: #201a36;
+  --color-brand: #8b5cf6;
+  --color-brand-soft: #a78bfa;
+  --color-glow: #b79cff;
+  --color-muted: #a294bd;
+  --color-line: rgba(236, 232, 248, 0.12);
+  --color-code-bg: #0c0917;
+  --color-code-fg: #e9e4f5;
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 24px 60px rgba(0, 0, 0, 0.5);
 }
 
 body {
@@ -120,8 +153,11 @@ h3 {
   @apply rounded bg-ivory-soft px-1 py-0.5 font-mono text-xs;
 }
 .md-content pre {
-  @apply my-2 overflow-x-auto rounded-xl bg-ink-deep p-3 text-paper;
+  @apply my-2 overflow-x-auto rounded-xl p-3;
+  background-color: var(--color-code-bg);
+  color: var(--color-code-fg);
 }
 .md-content pre code {
-  @apply bg-transparent p-0 text-paper;
+  @apply bg-transparent p-0;
+  color: var(--color-code-fg);
 }

@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import ThemeToggle from "./ThemeToggle";
 
 function Orbits() {
   return (
@@ -39,6 +40,7 @@ export default function Navbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <>
               <Link to="/panier" className="btn-ghost !px-3 !py-2" aria-label="Panier">🛒</Link>
