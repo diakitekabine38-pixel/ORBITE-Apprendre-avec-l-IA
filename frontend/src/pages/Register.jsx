@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import ResendVerification from "../components/ResendVerification";
 
 export default function Register() {
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     username: "",
@@ -59,11 +58,8 @@ export default function Register() {
             <ResendVerification defaultEmail={form.email} />
           </div>
           <p className="text-sm text-muted">
-            Tu pourras te connecter dès que ton adresse sera confirmée.
+            Ta connexion se fera toute seule dès que tu cliqueras le lien reçu.
           </p>
-          <button className="btn-primary w-full" onClick={() => navigate("/login")}>
-            Aller à la connexion
-          </button>
         </div>
       </div>
     );
