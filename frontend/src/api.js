@@ -35,12 +35,13 @@ async function refreshAccess() {
 }
 
 export async function api(path, options = {}) {
+  const anonymous = options.auth === false;
   let headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (tokens.access) headers.Authorization = `Bearer ${tokens.access}`;
+  if (tokens.access && !anonymous) headers.Authorization = `Bearer ${tokens.access}`;
 
   let res = await fetch(`${BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401 && tokens.refresh) {
+  if (!anonymous && res.status === 401 && tokens.refresh) {
     try {
       headers.Authorization = `Bearer ${await refreshAccess()}`;
       res = await fetch(`${BASE}${path}`, { ...options, headers });

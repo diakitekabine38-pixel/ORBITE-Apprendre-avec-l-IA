@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiGet } from "../api";
+import { api } from "../api";
 import { useAuth } from "../auth";
 import ResendVerification from "../components/ResendVerification";
 
@@ -12,7 +12,7 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     let alive = true;
-    apiGet(`/auth/verify-email/${token}/`)
+    api(`/auth/verify-email/${token}/`, { auth: false })
       .then(async (data) => {
         if (data.access && data.refresh) {
           const me = await enterSession(data);

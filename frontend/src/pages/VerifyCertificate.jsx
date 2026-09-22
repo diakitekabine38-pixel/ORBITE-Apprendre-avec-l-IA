@@ -9,7 +9,7 @@ export default function VerifyCertificate() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api(`/certificates/verify/${certificateId}/`)
+    api(`/certificates/verify/${certificateId}/`, { auth: false })
       .then(setData)
       .catch((e) => setError(e.message || "Certificat introuvable."))
       .finally(() => setLoading(false));
