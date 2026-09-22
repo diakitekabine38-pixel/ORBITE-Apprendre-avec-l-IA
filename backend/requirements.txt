@@ -5,6 +5,9 @@ django-cors-headers>=4.6
 django-filter>=24
 python-dotenv>=1.0
 Pillow>=11
+# Production serving (Windows-compatible WSGI + static files)
+waitress>=3.0
+whitenoise>=6.0
 # Production database
 psycopg[binary]>=3.2
 # Async tasks (production)
