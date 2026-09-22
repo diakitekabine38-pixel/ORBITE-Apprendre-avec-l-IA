@@ -196,6 +196,8 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    # Clé de signature dédiée aux jetons (rotation = déconnexion de tous les utilisateurs).
+    "SIGNING_KEY": os.environ.get("ORBITE_JWT_SIGNING_KEY") or SECRET_KEY,
 }
 
 # ---------------------------------------------------------------------------
