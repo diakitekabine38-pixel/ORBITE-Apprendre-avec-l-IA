@@ -12,4 +12,4 @@ router.register("user-skills", views.UserSkillViewSet, basename="user-skill")
 router.register("goals", views.GoalViewSet, basename="goal")
 router.register("paths", views.LearningPathViewSet, basename="learning-path")
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [path("orbite/", views.orbite, name="orbite")]

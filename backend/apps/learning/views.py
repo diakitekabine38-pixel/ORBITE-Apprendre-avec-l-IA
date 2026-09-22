@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count, F
 
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -19,6 +19,13 @@ from .serializers import (
     SkillSerializer,
     UserSkillSerializer,
 )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def orbite(request):
+    """Trajectoire orbitale de l'apprenant (vue /app/orbite)."""
+    return Response(services.build_orbite(request.user))
 
 
 class EnrollmentViewSet(viewsets.ModelViewSet):

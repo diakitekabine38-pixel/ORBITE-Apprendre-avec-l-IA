@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Learn from "./pages/Learn";
 import Chat from "./pages/Chat";
 import Certificates from "./pages/Certificates";
+import Orbite from "./pages/Orbite";
 import AdminAgents from "./pages/AdminAgents";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -52,6 +53,14 @@ export default function App() {
             element={
               <Private>
                 <Chat />
+              </Private>
+            }
+          />
+          <Route
+            path="/app/orbite"
+            element={
+              <Private>
+                <Orbite />
               </Private>
             }
           />

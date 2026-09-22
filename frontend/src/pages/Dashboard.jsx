@@ -56,6 +56,16 @@ export default function Dashboard() {
         </div>
       )}
 
+      <div className="glass mt-8 flex flex-col items-start justify-between gap-4 border-brand/30 bg-gradient-to-r from-brand/10 via-transparent to-cyan-500/10 p-5 sm:flex-row sm:items-center">
+        <div>
+          <p className="font-display text-lg font-semibold">🛰️ Ton orbite personnelle</p>
+          <p className="mt-1 text-sm text-muted">
+            Visualise tes compétences en rotation : gravité orbitale, série active et prochaine accélération.
+          </p>
+        </div>
+        <Link to="/app/orbite" className="btn-primary shrink-0 !px-4 text-sm">Ouvrir mon orbite</Link>
+      </div>
+
       <h2 className="mt-10 mb-4 text-xl font-bold">Mes formations</h2>
       {enrollments.length === 0 ? (
         <div className="glass p-10 text-center">

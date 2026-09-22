@@ -8,7 +8,9 @@ from django.utils import timezone
 
 from apps.ai.models import Recommendation
 
-from .models import LessonProgress
+from .models import Enrollment, LessonProgress
+
+from apps.courses.models import Course
 
 XP_LESSON = 20
 XP_QUIZ = 50
@@ -96,3 +98,97 @@ def recommend_next_action(user, limit=3):
                 if len(recommendations) >= limit:
                     break
     return recommendations
+
+
+# === Orbite personnelle — cartographie visuelle des compétences ===
+
+ORBITE_RINGS = [
+    {"tier": 1, "radius": 285, "name": "Émergence", "subtitle": "Premiers pas sur votre trajectoire"},
+    {"tier": 2, "radius": 205, "name": "Orbite stable", "subtitle": "Compétences en pleine assimilation"},
+    {"tier": 3, "radius": 125, "name": "Pleine gravité", "subtitle": "Maîtrisées et en rotation autour de vous"},
+]
+
+
+def _skill_from_enrollment(enrollment):
+    course = enrollment.course
+    mastery = round(enrollment.progress)
+    return {
+        "id": course.id,
+        "slug": course.slug,
+        "name": course.title,
+        "mastery_score": mastery,
+        "level": min(5, 1 + mastery // 20),
+        "xp": mastery,
+        "color": (course.ai_mentor.color if course.ai_mentor and course.ai_mentor.color else "#7C5CFF"),
+        "description": course.short_description or course.description[:200] or "",
+    }
+
+
+def build_orbite(user):
+    """Trajectoire orbitale de l'apprenant → contrat du OrbitalCanvas."""
+    enrollments = list(
+        Enrollment.objects.filter(user=user)
+        .select_related("course", "course__ai_mentor", "course__category")
+    )
+    for e in enrollments:
+        e.recompute_progress()
+
+    skills = [_skill_from_enrollment(e) for e in enrollments]
+    for skill in skills:
+        for ring in ORBITE_RINGS:
+            if skill["mastery_score"] < 35 and ring["tier"] == 1:
+                skill["ringTier"] = 1
+                break
+            if 35 <= skill["mastery_score"] < 70 and ring["tier"] == 2:
+                skill["ringTier"] = 2
+                break
+            if skill["mastery_score"] >= 70 and ring["tier"] == 3:
+                skill["ringTier"] = 3
+                break
+
+    rings = []
+    for ring in ORBITE_RINGS:
+        rings.append(
+            {
+                "tier": ring["tier"],
+                "radius": ring["radius"],
+                "name": ring["name"],
+                "subtitle": ring["subtitle"],
+                "skills": [s for s in skills if s["ringTier"] == ring["tier"]],
+            }
+        )
+
+    profile = user.profile
+    learner = {
+        "full_name": user.get_full_name() or user.username,
+        "gravitational_index": round(sum(s["mastery_score"] for s in skills) / len(skills)) if skills else 0,
+        "xp": user.xp,
+        "level": user.level,
+        "streak_days": profile.ai_preferences.get("streak_days", 0),
+        "active_skills_count": len(skills),
+    }
+
+    recommendation = None
+    if enrollments:
+        weakest = min(skills, key=lambda s: s["mastery_score"])
+        recommendation = {
+            "title": f"Prochaine accélération : {weakest['name']}",
+            "reason": (
+                f"Vous êtes à {weakest['mastery_score']}% de maîtrise sur cette compétence. "
+                "Reprendre ce parcours est le levier le plus rapide pour augmenter votre gravité orbitale."
+            ),
+            "action_label": "Reprendre le parcours",
+        }
+    else:
+        starter = Course.published_objects.order_by("-is_free", "-created_at").first()
+        if starter:
+            recommendation = {
+                "title": "Lancez votre première orbite",
+                "reason": (
+                    f"Commencez par « {starter.title} » : votre gravité orbitale se mettra à "
+                    "tourner dès le premier module terminé."
+                ),
+                "action_label": "Découvrir les formations",
+            }
+
+    return {"learner": learner, "orbital_rings": rings, "recommendation": recommendation}

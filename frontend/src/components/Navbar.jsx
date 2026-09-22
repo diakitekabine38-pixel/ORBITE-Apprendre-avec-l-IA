@@ -25,6 +25,16 @@ export default function Navbar() {
           <NavLink to="/catalogue" className={navLink}>Catalogue</NavLink>
           {user && <NavLink to="/dashboard" className={navLink}>Mon espace</NavLink>}
           {user && <NavLink to="/chat" className={navLink}>Coach IA</NavLink>}
+          {user && (
+            <NavLink
+              to="/app/orbite"
+              className={({ isActive }) =>
+                `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-brand bg-ivory-soft" : "text-muted hover:text-ink-deep"}`
+              }
+            >
+              🛰️ Mon Orbite
+            </NavLink>
+          )}
           {user && <NavLink to="/certificats" className={navLink}>Certificats</NavLink>}
           {["admin", "super_admin"].includes(user?.role) && (
             <NavLink to="/admin/agents" className={navLink}>Agents IA</NavLink>
