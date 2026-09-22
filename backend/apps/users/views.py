@@ -10,12 +10,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.common.permissions import IsAdminUser, IsOwnerOrReadOnly
 
 from .models import Profile, Role
 from .serializers import (
     ChangePasswordSerializer,
+    EmailTokenObtainPairSerializer,
     ProfileSerializer,
     RegisterSerializer,
     RoleSerializer,
@@ -24,6 +26,12 @@ from .serializers import (
 from .services import send_verification_email
 
 User = get_user_model()
+
+
+class LoginView(TokenObtainPairView):
+    """Connexion par email + mot de passe (username encore accepté)."""
+
+    serializer_class = EmailTokenObtainPairSerializer
 
 
 class RegisterView(APIView):

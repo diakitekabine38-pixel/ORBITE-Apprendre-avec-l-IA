@@ -26,8 +26,8 @@ export function AuthProvider({ children }) {
     return { ...me, profile: profileRes || {} };
   }
 
-  async function login(username, password) {
-    const data = await apiPost("/auth/login/", { username, password });
+  async function login(email, password) {
+    const data = await apiPost("/auth/login/", { email, password });
     return enterSession(data);
   }
 

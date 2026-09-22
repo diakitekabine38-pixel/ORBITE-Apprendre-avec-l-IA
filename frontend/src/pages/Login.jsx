@@ -8,7 +8,7 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from?.pathname || "/dashboard";
 
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -17,7 +17,7 @@ export default function Login() {
     setBusy(true);
     setError("");
     try {
-      await login(form.username, form.password);
+      await login(form.email, form.password);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message);
@@ -32,16 +32,17 @@ export default function Login() {
         <div>
           <h1 className="text-2xl font-bold">Connexion</h1>
           <p className="mt-1 text-sm text-muted">
-            Demo : <code className="rounded bg-ivory-soft px-1.5 py-0.5">apprenant</code> /{" "}
+            Demo : <code className="rounded bg-ivory-soft px-1.5 py-0.5">apprenant@orbite.example</code> /{" "}
             <code className="rounded bg-ivory-soft px-1.5 py-0.5">Apprenant123!</code>
           </p>
         </div>
         <input
           className="input"
-          placeholder="Nom d'utilisateur"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-          autoComplete="username"
+          type="email"
+          placeholder="Adresse email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          autoComplete="email"
           required
         />
         <input

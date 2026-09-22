@@ -1,7 +1,39 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import Profile, Role, User
+
+
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Connexion par email + mot de passe (le username reste accepté).
+
+    SimpleJWT n'authentifie que par ``username`` : on accepte donc aussi un
+    champ ``email``, que l'on résout vers le compte correspondant avant de
+    déléguer la vérification du mot de passe au flux JWT classique. La
+    réponse (jetons access/refresh) est identique.
+    Le champ ``username`` reste accepté (rétrocompatibilité avec les tests).
+    SimpleJWT redéclare ``username`` comme obligatoire dans ``__init__`` :
+    on retire l'exigence après l'initialisation parente.
+    """
+
+    email = serializers.EmailField(required=False, write_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "username" in self.fields:
+            self.fields["username"].required = False
+
+    def validate(self, attrs):
+        email = attrs.pop("email", None)
+        if email and not attrs.get("username"):
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                raise serializers.ValidationError(
+                    {"email": "Aucun compte ne correspond à cette adresse."}
+                )
+            attrs["username"] = user.get_username()
+        return super().validate(attrs)
 
 
 class UserSerializer(serializers.ModelSerializer):
