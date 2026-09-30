@@ -65,7 +65,7 @@ export default function Checkout() {
         </p>
         <p className="mt-4 font-mono text-sm text-glow">Référence {order.reference}</p>
         <div className="mt-6 flex justify-center gap-3">
-          <Link to="/dashboard" className="btn-primary">Aller à mon espace</Link>
+          <Link to="/student" className="btn-primary">Aller à mon espace</Link>
           <Link to="/catalogue" className="btn-ghost">Catalogue</Link>
         </div>
       </div>

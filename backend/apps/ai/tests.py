@@ -1,13 +1,18 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.ai.models import AIMessage, AISession, Recommendation
-from apps.ai.services import AIOrchestrator, ContextBuilder
+from apps.ai.services import (
+    AIOrchestrator,
+    ContextBuilder,
+    LearnerProfileService,
+)
 from apps.common.tests import make_agent, make_course, make_user
 from apps.learning.models import Enrollment, Skill, UserSkill
 
 
+@override_settings(ORBITE_LLM_PROVIDER="mock")
 class OrchestratorTests(TestCase):
     def setUp(self):
         self.student = make_user("iauser")
@@ -29,6 +34,23 @@ class OrchestratorTests(TestCase):
         self.assertTrue(answer)
         self.assertTrue(session.agent_id == self.agent.id)
 
+    def test_mock_greets_and_states_mission(self):
+        session, answer = AIOrchestrator(self.student).reply(
+            "bonjour", agent=self.agent
+        )
+        self.assertIn("Bonjour", answer)
+        self.assertIn("coach", answer.lower())
+        self.assertIn("mon rôle", answer.lower())
+        self.assertLess(len(answer), 500, "la salutation reste brève")
+
+    def test_mock_stays_short_and_asks_one_question(self):
+        _, answer = AIOrchestrator(self.student).reply(
+            "Explique-moi Django.", agent=self.agent
+        )
+        self.assertIn("Django", answer)
+        self.assertIn("?", answer)
+        self.assertLess(len(answer), 500)
+
     def test_context_builder_injects_skills_and_lesson(self):
         course = make_course(instructor=make_user("prof_cb", role="instructor"), title="Context Builder")
         module = course.modules.first()
@@ -48,7 +70,91 @@ class OrchestratorTests(TestCase):
         self.assertIn("compétences à renforcer", context.lower())
         self.assertIn("python", context.lower())
 
+    def test_context_builder_pushes_personalization_when_profile_unknown(self):
+        session = AISession.objects.create(user=self.student, agent=self.agent)
+        builder = ContextBuilder(self.student, session, self.agent)
+        self.assertIn("profil de l'apprenant inconnu", builder.build().lower())
+        self.assertIn("pose une question", builder.build().lower())
+        self.assertIn("générique", builder.build().lower())
 
+    def test_context_builder_uses_profile_once_known(self):
+        LearnerProfileService.update(
+            self.student,
+            {
+                "niveau": "débutant",
+                "objectif": "Devenir développeur web",
+                "statut": "étudiant",
+                "disponibilite": "10h par semaine",
+                "methode": "exercices",
+                "motivation": "motivation",
+            },
+        )
+        session = AISession.objects.create(user=self.student, agent=self.agent)
+        context = ContextBuilder(self.student, session, self.agent).build().lower()
+        self.assertIn("devenir développeur web", context)
+        self.assertIn("débutant", context)
+        self.assertNotIn("dimensions du profil à découvrir", context)
+        self.assertIn("profil complet", context)
+
+    def test_context_builder_injects_resources_with_usage_directive(self):
+        self.agent.resources = [
+            {"titre": "France IO", "url": "https://www.france-ioi.org", "description": "plateforme", "gratuit": True},
+            {"titre": "CodinGame", "url": "https://www.codingame.com", "description": "défis", "gratuit": True},
+        ]
+        self.agent.save(update_fields=["resources"])
+        session = AISession.objects.create(user=self.student, agent=self.agent)
+        context = ContextBuilder(self.student, session, self.agent).build().lower()
+        self.assertIn("ressources externes recommandées", context)
+        self.assertIn("france-ioi.org", context)
+        self.assertIn("jamais toute la liste", context)
+        self.assertIn("si la question n'en a pas besoin, n'en parle pas", context)
+
+    def test_context_builder_skips_resources_when_empty(self):
+        session = AISession.objects.create(user=self.student, agent=self.agent)
+        context = ContextBuilder(self.student, session, self.agent).build().lower()
+        self.assertNotIn("ressources externes recommandées", context)
+
+
+class LearnerProfileTests(TestCase):
+    def setUp(self):
+        self.student = make_user("profil")
+
+    def test_extract_from_detects_several_dimensions(self):
+        updates = LearnerProfileService.extract_from(
+            self.student,
+            "Je suis étudiant et je débute en Python. Je veux devenir développeur, "
+            "je peux y consacrer 10h par semaine le soir. J'aime apprendre par les exercices.",
+        )
+        updates = set(updates)
+        stored = LearnerProfileService.read(self.student)
+        self.assertIn("statut", updates)
+        self.assertEqual(stored.get("statut"), "étudiant")
+        self.assertIn("niveau", updates)
+        self.assertEqual(stored.get("niveau"), "débutant")
+        self.assertIn("objectif", updates)
+        self.assertIn("devenir développeur", stored["objectif"])
+        self.assertIn("disponibilite", updates)
+        self.assertIn("10h", stored["disponibilite"])
+        self.assertIn("methode", updates)
+        self.assertEqual(stored.get("methode"), "exercices")
+
+    def test_load_lists_missing_dimensions(self):
+        data = LearnerProfileService.load(self.student)
+        self.assertEqual(data["known"], {})
+        self.assertGreaterEqual(len(data["missing"]), 5)
+        LearnerProfileService.update(self.student, {"niveau": "débutant"})
+        data = LearnerProfileService.load(self.student)
+        self.assertEqual(data["known"], {"niveau": "débutant"})
+        self.assertNotIn("niveau", data["missing"])
+
+    def test_extract_does_not_override_known_values(self):
+        LearnerProfileService.update(self.student, {"niveau": "avancé"})
+        LearnerProfileService.extract_from(self.student, "Je débute complètement.")
+        stored = LearnerProfileService.read(self.student)
+        self.assertEqual(stored["niveau"], "avancé")
+
+
+@override_settings(ORBITE_LLM_PROVIDER="mock")
 class ChatApiTests(APITestCase):
     def setUp(self):
         self.student = make_user("chateur")
@@ -159,6 +265,27 @@ class ChatApiTests(APITestCase):
             response.data["session"]["id"], foreign.id,
             "une session d'un autre utilisateur ne doit pas être réutilisée",
         )
+
+    def test_profile_endpoint(self):
+        self.client.force_authenticate(self.student)
+        response = self.client.get("/api/v1/ai/sessions/profile/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("known", response.data)
+        self.assertIn("missing", response.data)
+        self.assertIn("dimensions", response.data)
+        self.assertGreaterEqual(len(response.data["missing"]), 5)
+
+    def test_ask_extracts_learner_profile(self):
+        self.client.force_authenticate(self.student)
+        response = self.client.post(
+            "/api/v1/ai/sessions/ask/",
+            {"content": "Je suis étudiant et je débute en Python.", "agent_id": self.agent.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        stored = LearnerProfileService.read(self.student)
+        self.assertEqual(stored.get("statut"), "étudiant")
+        self.assertEqual(stored.get("niveau"), "débutant")
 
 
 class RecommendationTests(APITestCase):

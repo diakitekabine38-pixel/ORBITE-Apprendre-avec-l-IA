@@ -35,6 +35,7 @@ class AIAgentAdminSerializer(serializers.ModelSerializer):
             "personality",
             "system_prompt",
             "teaching_rules",
+            "resources",
             "expertise",
             "color",
             "model",

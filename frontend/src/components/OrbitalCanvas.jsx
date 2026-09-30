@@ -271,7 +271,7 @@ export default function OrbitalCanvas({ orbiteData }) {
                 <span className="font-bold text-amber-500">+{selectedSkill.xp} XP</span>
               </div>
 
-              <Link to={selectedSkill.mastery_score > 0 ? `/apprentissage/${selectedSkill.slug}` : `/formations/${selectedSkill.slug}`} className="btn-primary w-full text-xs">
+              <Link to={selectedSkill.mastery_score > 0 ? `/student/apprentissage/${selectedSkill.slug}` : `/formations/${selectedSkill.slug}`} className="btn-primary w-full text-xs">
                 {selectedSkill.mastery_score > 0 ? "Reprendre la formation" : "Renforcer cette compétence"} ➜
               </Link>
             </div>

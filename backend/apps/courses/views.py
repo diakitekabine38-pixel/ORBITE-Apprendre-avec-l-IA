@@ -12,6 +12,7 @@ from apps.common.permissions import IsAdminOrInstructorOwner, IsAdminUser, IsIns
 from .models import Category, Course, Lesson, Module, Review, Video
 from .serializers import (
     CategorySerializer,
+    CourseAdminSerializer,
     CourseDetailSerializer,
     CourseListSerializer,
     CourseWriteSerializer,
@@ -44,8 +45,16 @@ class CourseViewSet(viewsets.ModelViewSet):
     lookup_field = "slug"
 
     def get_serializer_class(self):
+        user = getattr(self.request, "user", None)
         if self.action in ("create", "update", "partial_update"):
             return CourseWriteSerializer
+        if (
+            self.action in ("list", "retrieve")
+            and user is not None
+            and user.is_authenticated
+            and (user.is_admin() or user.is_instructor())
+        ):
+            return CourseAdminSerializer
         if self.action == "retrieve":
             return CourseDetailSerializer
         return CourseListSerializer

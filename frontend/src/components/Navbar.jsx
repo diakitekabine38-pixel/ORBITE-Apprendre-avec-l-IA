@@ -1,7 +1,10 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
 import { useAuth } from "../auth";
 import { useCart } from "../cart";
+import { publicNavLinks } from "../navigation";
 import ThemeToggle from "./ThemeToggle";
+import Brand from "./Brand";
 
 const navLink = ({ isActive }) =>
   `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-brand bg-ivory-soft" : "text-muted hover:text-ink-deep"}`;
@@ -11,53 +14,40 @@ export default function Navbar() {
   const { cartCount } = useCart();
   const navigate = useNavigate();
 
+  const links = publicNavLinks(user);
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-ivory/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-        <Link to="/" className="group flex shrink-0 items-center gap-2 font-display">
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl border border-line bg-paper p-1 shadow-sm transition-all duration-300 group-hover:border-brand/60 group-active:scale-95">
-            <img src="/logo.svg" alt="ORBITE" className="h-6 w-6 object-contain" />
-          </span>
-          <span className="text-lg font-semibold tracking-tight">ORBITE</span>
-        </Link>
+        <Brand />
 
         <nav className="hidden items-center gap-1 md:flex">
-          <NavLink to="/catalogue" className={navLink}>Catalogue</NavLink>
-          {user && <NavLink to="/dashboard" className={navLink}>Mon espace</NavLink>}
-          {user && <NavLink to="/chat" className={navLink}>Coach IA</NavLink>}
-          {user && (
-            <NavLink
-              to="/app/orbite"
-              className={({ isActive }) =>
-                `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-brand bg-ivory-soft" : "text-muted hover:text-ink-deep"}`
-              }
-            >
-              🛰️ Mon Orbite
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} className={navLink}>
+              {link.label}
             </NavLink>
-          )}
-          {user && <NavLink to="/certificats" className={navLink}>Certificats</NavLink>}
-          {["admin", "super_admin"].includes(user?.role) && (
-            <NavLink to="/admin/agents" className={navLink}>Agents IA</NavLink>
-          )}
+          ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
           <ThemeToggle />
           {user ? (
             <>
-              <Link
-                to="/panier"
-                className="relative rounded-xl !p-2 transition active:scale-90"
-                aria-label="Mon panier"
-                title="Mon panier"
-              >
-                <span className="block text-lg leading-none">🛒</span>
-                {cartCount > 0 && (
-                  <span className="animate-scale-in absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-glow px-1 text-[9px] font-bold text-white shadow-md">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+              {user.role === "student" && (
+                <Link
+                  to="/student/panier"
+                  className="relative rounded-xl !p-2 transition active:scale-90"
+                  aria-label="Mon panier"
+                  title="Mon panier"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <span className="animate-scale-in absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-glow px-1 text-[9px] font-bold text-white shadow-md">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               <span className="hidden text-sm text-muted sm:block">
                 {user.first_name || user.username}
                 <span className="ml-2 rounded-full bg-brand/15 px-2 py-0.5 text-xs text-brand">

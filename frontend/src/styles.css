@@ -1,41 +1,85 @@
 @import "tailwindcss";
 
 @theme {
-  /* === ORBITE Brand Book — thème ivoire clair === */
+  /* === ORBITE Design System — Brand Book v1.0 (Août 2026) === */
+
+  /* Surfaces ivoire / papier */
   --color-ivory: #f4efe3;
   --color-ivory-soft: #ece5d5;
   --color-ivory-warm: #e8dfc9;
   --color-paper: #fffcf5;
   --color-paper-soft: #faf6ec;
 
-  /* surfaces/alias — le vocabulaire des composants reste stable */
-  --color-ink: #f4efe3; /* fond de page */
-  --color-ink-deep: #1a0f2e; /* texte principal */
-  --color-panel: #fffcf5; /* cartes */
-  --color-panel-2: #faf6ec; /* inputs/surfaces internes */
+  /* Alias de vocabulaire interne — stables pour les pages existantes.
+     Le Brand Book nomme "ink" le texte foncé #1A0F2E ; l'app garde
+     "ink" = fond de page et "ink-deep" = texte principal. */
+  --color-ink: #f4efe3; /* fond de page (alias ivory) */
+  --color-ink-deep: #1a0f2e; /* texte principal (alias ink Brand Book) */
+  --color-panel: #fffcf5; /* cartes (alias paper) */
+  --color-panel-2: #faf6ec; /* inputs / surfaces internes (alias paper-soft) */
 
-  /* violet orbital — marque */
+  /* === Palette Violet Orbital — couleur de marque === */
+  --color-orbital-50: #f5f0ff;
+  --color-orbital-100: #ede4fe;
+  --color-orbital-200: #ddd6fe;
+  --color-orbital-300: #c4b5fd;
+  --color-orbital-400: #a78bfa;
+  --color-orbital-500: #8b5cf6;
+  --color-orbital-600: #7c3aed;
+  --color-orbital-700: #6d28d9;
+  --color-orbital-900: #4c1d95;
+  --color-orbital-950: #2d1b69;
+
+  /* Alias d'utilisation (rétro-compatibles) */
   --color-brand: #7c3aed; /* orbital-600 */
   --color-brand-soft: #8b5cf6; /* orbital-500 */
-  --color-glow: #6d28d9; /* orbital-700 — accents, liens */
+  --color-glow: #6d28d9; /* orbital-700 */
 
-  --color-muted: #8b7fa3; /* ink-muted */
+  /* === Couleurs des Formateurs IA === */
+  --color-kodex-light: #60a5fa;
+  --color-kodex: #2563eb;
+  --color-kodex-dark: #1e40af;
+  --color-kodex-soft: #dbeafe;
+  --color-kora-light: #f9a8d4;
+  --color-kora: #ec4899;
+  --color-kora-dark: #be185d;
+  --color-kora-soft: #fce7f3;
+  --color-nova-light: #fcd34d;
+  --color-nova: #f59e0b;
+  --color-nova-dark: #d97706;
+  --color-nova-soft: #fef3c7;
+  --color-pixel-light: #c4b5fd;
+  --color-pixel: #8b5cf6;
+  --color-pixel-dark: #6d28d9;
+  --color-pixel-soft: #ede9fe;
+
+  /* === Sémantique — états & feedback === */
+  --color-success: #059669;
+  --color-success-soft: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-soft: #fef3c7;
+  --color-error: #dc2626;
+  --color-error-soft: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+
+  /* === Textes & lignes === */
+  --color-muted: #8b7fa3;
+  --color-ink-soft: #5f4f84;
+  --color-ink-faint: #a294bd;
   --color-line: rgba(26, 15, 46, 0.1);
+  --color-line-soft: rgba(26, 15, 46, 0.08);
 
   /* blocs de code (indépendants du mode) */
   --color-code-bg: #1a0f2e;
   --color-code-fg: #fffcf5;
 
-  /* formateurs IA (Brand Book §Formateurs) */
-  --color-kodex: #2563eb;
-  --color-kora: #ec4899;
-  --color-nova: #f59e0b;
-  --color-pixel: #8b5cf6;
-
+  /* === Typographie (Brand Book §Typographie) === */
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
+  /* === Ombres === */
   --shadow-card: 0 4px 24px rgba(26, 15, 46, 0.06);
   --shadow-card-hover: 0 12px 40px rgba(26, 15, 46, 0.12);
   --shadow-elevated: 0 24px 60px rgba(26, 15, 46, 0.15);
@@ -46,12 +90,12 @@ html {
   color-scheme: light;
 }
 
-/* === Mode nuit — on surcharge les tokens du thème (pas de refonte des classes) === */
 html.dark {
   background: #120d1e;
   color-scheme: dark;
 }
 
+/* === Mode nuit — on surcharge les tokens du thème (pas de refonte des classes) === */
 .dark {
   --color-ivory: #120d1e;
   --color-ivory-soft: #211a33;
@@ -62,13 +106,49 @@ html.dark {
   --color-ink-deep: #ece8f8;
   --color-panel: #1a1430;
   --color-panel-2: #201a36;
+
+  --color-orbital-50: rgba(139, 92, 246, 0.14);
+  --color-orbital-100: rgba(139, 92, 246, 0.2);
+  --color-orbital-200: rgba(167, 139, 250, 0.26);
+  --color-orbital-300: #9d82f5;
+  --color-orbital-400: #b39cfc;
+  --color-orbital-500: #a78bfa;
+  --color-orbital-600: #8b5cf6;
+  --color-orbital-700: #c4b5fd;
+  --color-orbital-900: #d8c9ff;
+  --color-orbital-950: #ece8f8;
+
   --color-brand: #8b5cf6;
   --color-brand-soft: #a78bfa;
   --color-glow: #b79cff;
+
   --color-muted: #a294bd;
+  --color-ink-soft: #c3b8dc;
+  --color-ink-faint: #8c83a5;
   --color-line: rgba(236, 232, 248, 0.12);
+  --color-line-soft: rgba(236, 232, 248, 0.08);
+
+  --color-success: #34d399;
+  --color-success-soft: rgba(5, 150, 105, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgba(217, 119, 6, 0.15);
+  --color-error: #f87171;
+  --color-error-soft: rgba(220, 38, 38, 0.15);
+  --color-info: #60a5fa;
+  --color-info-soft: rgba(37, 99, 235, 0.18);
+
+  --color-kodex: #60a5fa;
+  --color-kodex-soft: rgba(37, 99, 235, 0.15);
+  --color-kora: #f9a8d4;
+  --color-kora-soft: rgba(236, 72, 153, 0.15);
+  --color-nova: #fbbf24;
+  --color-nova-soft: rgba(245, 158, 11, 0.15);
+  --color-pixel: #c4b5fd;
+  --color-pixel-soft: rgba(139, 92, 246, 0.15);
+
   --color-code-bg: #0c0917;
   --color-code-fg: #e9e4f5;
+
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35);
   --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.45);
   --shadow-elevated: 0 24px 60px rgba(0, 0, 0, 0.5);
@@ -78,24 +158,59 @@ body {
   @apply bg-ink text-ink-deep font-sans antialiased;
 }
 
+/* === Accents dégradés marque === */
+.bg-orbital-gradient {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+.text-orbital-gradient {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-trainer-gradient {
+  background-image: linear-gradient(120deg, #2563eb 0%, #ec4899 33%, #f59e0b 66%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* === Focus — signature orbitale === */
+.focus-orbital {
+  outline: none;
+}
+.focus-orbital:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.25);
+}
+.dark .focus-orbital:focus {
+  border-color: #b39cfc;
+  box-shadow: 0 0 0 3px rgba(179, 156, 252, 0.25);
+}
+
+/* === Conteneur & surfaces === */
+.container-orbit {
+  @apply mx-auto w-full max-w-6xl px-4;
+}
 .glass {
   @apply bg-panel border border-line rounded-2xl;
 }
 
+/* === Boutons — Brand Book §Composants : pill, ivoire/paper, lift au hover === */
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-40 disabled:pointer-events-none;
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-orbital-600 px-6 py-3 text-sm font-medium text-white transition-all hover:-translate-y-0.5 hover:bg-orbital-700 hover:shadow-card-hover disabled:pointer-events-none disabled:opacity-40 disabled:hover:translate-y-0;
 }
-
 .btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-paper px-5 py-2.5 text-sm font-medium text-ink-deep transition hover:bg-ivory-soft;
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-paper px-6 py-3 text-sm font-medium text-ink-deep transition-all hover:border-orbital-400 hover:bg-paper-soft;
 }
 
+/* === Champs — Brand Book §Formulaires : rounded-2xl, focus orbital === */
 .input {
-  @apply w-full rounded-xl border border-line bg-paper px-4 py-2.5 text-sm text-ink-deep placeholder:text-muted outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/20;
+  @apply w-full rounded-2xl border border-line bg-paper px-4 py-3 text-sm text-ink-deep placeholder:text-ink-faint outline-none transition-all focus:border-orbital-400 focus:ring-2 focus:ring-orbital-400/25;
 }
 
 .badge {
-  @apply inline-flex items-center gap-1 rounded-full border border-line bg-paper-soft px-3 py-1 text-xs font-medium text-muted;
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-paper-soft px-3 py-1 text-xs font-medium text-muted;
 }
 
 .link {
@@ -108,6 +223,7 @@ h3 {
   @apply font-display;
 }
 
+/* === Contenu markdown (leçons) === */
 .md-content {
   @apply text-sm leading-relaxed text-ink-deep;
 }
@@ -162,6 +278,7 @@ h3 {
   color: var(--color-code-fg);
 }
 
+/* === Animations === */
 @keyframes scale-in {
   from {
     transform: scale(0.4);
@@ -174,4 +291,27 @@ h3 {
 }
 .animate-scale-in {
   animation: scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-toast-in {
+  animation: toast-in 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

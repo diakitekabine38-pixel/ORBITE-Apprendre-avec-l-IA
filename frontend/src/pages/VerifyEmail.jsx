@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { resolvePostLogin } from "../navigation";
 import ResendVerification from "../components/ResendVerification";
 
 export default function VerifyEmail() {
@@ -16,7 +17,7 @@ export default function VerifyEmail() {
       .then(async (data) => {
         if (data.access && data.refresh) {
           const me = await enterSession(data);
-          if (alive) navigate(["admin", "super_admin"].includes(me?.role) ? "/admin/agents" : "/dashboard", { replace: true });
+          if (alive) navigate(resolvePostLogin(me), { replace: true });
           return;
         }
         if (alive) setState("ok");
@@ -43,8 +44,8 @@ export default function VerifyEmail() {
             <p className="text-sm text-muted">
               Ton adresse est confirmée. Tu peux maintenant profiter pleinement d'ORBITE.
             </p>
-            <Link to={user ? "/dashboard" : "/login"} className="btn-primary block w-full text-center">
-              {user ? "Aller au tableau de bord" : "Se connecter"}
+            <Link to={user ? resolvePostLogin(user) : "/login"} className="btn-primary block w-full text-center">
+              {user ? "Aller à mon espace" : "Se connecter"}
             </Link>
           </>
         )}

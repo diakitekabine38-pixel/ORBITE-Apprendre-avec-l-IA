@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Award, Sparkles } from "lucide-react";
 import { api, apiPost } from "../api";
 import { useAuth } from "../auth";
 
@@ -30,7 +31,7 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">
-            Bonjour, {user?.first_name || user?.username} 👋
+            Bonjour, {user?.first_name || user?.username}
           </h1>
           <p className="mt-1 text-muted">Voici ta vue centrale d'apprentissage.</p>
         </div>
@@ -58,12 +59,15 @@ export default function Dashboard() {
 
       <div className="glass mt-8 flex flex-col items-start justify-between gap-4 border-brand/30 bg-gradient-to-r from-brand/10 via-transparent to-cyan-500/10 p-5 sm:flex-row sm:items-center">
         <div>
-          <p className="font-display text-lg font-semibold">🛰️ Ton orbite personnelle</p>
+          <p className="flex items-center gap-2 font-display text-lg font-semibold">
+            <Sparkles className="h-5 w-5 text-glow" />
+            Ton orbite personnelle
+          </p>
           <p className="mt-1 text-sm text-muted">
             Visualise tes compétences en rotation : gravité orbitale, série active et prochaine accélération.
           </p>
         </div>
-        <Link to="/app/orbite" className="btn-primary shrink-0 !px-4 text-sm">Ouvrir mon orbite</Link>
+        <Link to="/student/orbite" className="btn-primary shrink-0 !px-4 text-sm">Ouvrir mon orbite</Link>
       </div>
 
       <h2 className="mt-10 mb-4 text-xl font-bold">Mes formations</h2>
@@ -92,11 +96,17 @@ export default function Dashboard() {
               </div>
               <p className="mt-2 text-sm text-muted">{Math.round(enr.progress || 0)}% terminée</p>
               <div className="mt-4 flex gap-2">
-                <Link to={`/apprentissage/${enr.course.slug}`} className="btn-primary w-full !py-2 text-xs">
+                <Link to={`/student/apprentissage/${enr.course.slug}`} className="btn-primary w-full !py-2 text-xs">
                   {enr.completed ? "Revoir" : "Continuer"}
                 </Link>
                 {enr.certificate && (
-                  <Link to="/certificats" className="btn-ghost !py-2 text-xs" title="Voir le certificat">🎓</Link>
+                  <Link
+                    to="/student/certificats"
+                    className="btn-ghost inline-flex !py-2 text-xs"
+                    title="Voir le certificat"
+                  >
+                    <Award className="h-4 w-4" />
+                  </Link>
                 )}
               </div>
             </div>

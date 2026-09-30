@@ -55,7 +55,7 @@ export default function Cart() {
             <p className="font-display text-xl">
               Total : <span className="font-bold">{money(cart.total)}</span>
             </p>
-            <Link to="/paiement" className="btn-primary">Procéder au paiement →</Link>
+            <Link to="/student/paiement" className="btn-primary">Procéder au paiement →</Link>
           </div>
         </>
       )}

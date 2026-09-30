@@ -7,6 +7,7 @@ backend builds for them, and their output is validated before reaching the user.
 """
 import json
 import logging
+import re
 
 from django.conf import settings
 from django.utils import timezone
@@ -14,6 +15,161 @@ from django.utils import timezone
 from .models import AIMessage, AISession, Recommendation
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Profil de l'apprenant : les dimensions que les coachs doivent connaître pour
+# personnaliser réellement leurs réponses (au lieu d'un discours générique).
+# ---------------------------------------------------------------------------
+
+LEARNER_PROFILE_DIMENSIONS = [
+    ("objectif", "son objectif principal (ex. changer de métier, obtenir un diplôme, se spécialiser)"),
+    ("statut", "son statut (étudiant, professionnel, en reconversion, autodidacte…)"),
+    ("niveau", "son niveau actuel dans le domaine (débutant, intermédiaire, avancé)"),
+    ("disponibilite", "son temps disponible pour apprendre (heures par semaine, moments de la journée)"),
+    ("methode", "sa méthode d'apprentissage préférée (vidéos, lecture, exercices, pratique, projets)"),
+    ("motivation", "sa motivation, ainsi que les difficultés ou blocages éventuels"),
+]
+
+_PROFILE_LABELS = {key: label for key, label in LEARNER_PROFILE_DIMENSIONS}
+
+_NIVEAU_RULES = [
+    (re.compile(r"\b(zéro|rien|jamais|début|débute|débutant|débutante)\b", re.I), "débutant"),
+    (re.compile(r"\b(intermédiaire|moyen|quelques bases|je connais)\b", re.I), "intermédiaire"),
+    (re.compile(r"\b(avancé|confirmé|expert|bon niveau)\b", re.I), "avancé"),
+]
+
+_METHODE_RULES = [
+    (re.compile(r"\b(vidéo|vidéos|regarder|regarde|écouter|podcasts?)\b", re.I), "vidéos / audio"),
+    (re.compile(r"\b(livre|lecture|lire|articles?|documentation)\b", re.I), "lecture"),
+    (re.compile(r"\b(exercice|exercices|quiz|entraîn|entraînement|fiches)\b", re.I), "exercices"),
+    (re.compile(r"\b(pratique|mise en pratique|projets?|réaliser|construire|appliquer)\b", re.I), "projets pratiques"),
+]
+
+_STATUT_RULES = [
+    (re.compile(r"\b(reconversion|changer de métier|nouveau métier)\b", re.I), "en reconversion"),
+    (re.compile(r"\b(étudiant|étudiante|lycéen|lycéenne|faculté|université|école)\b", re.I), "étudiant"),
+    (re.compile(r"\b(professionnel|professionnelle|je travaille|salarié|salariée|en poste)\b", re.I), "professionnel"),
+    (re.compile(r"\b(autodidacte|auto-formation|par moi-même)\b", re.I), "autodidacte"),
+]
+
+_OBJECTIF_RULES = [
+    (re.compile(r"\b(mon objectif|mon but|ma cible)\b", re.I), "objectif"),
+    (re.compile(r"\b(je veux|j'aimerais|je souhaite|je compte|je vise|je rêve de)\b", re.I), "objectif"),
+    (re.compile(r"\b(devenir|pour devenir)\b", re.I), "objectif"),
+]
+
+_DISPONIBILITE_RULES = [
+    (re.compile(r"\b(\d{1,2})\s*h(?:eures?)?\b", re.I), "heures/semaine"),
+    (re.compile(r"\b(le soir|le matin|la nuit|le week-end|le weekend|les week-ends)\b", re.I), "moments de la journée"),
+]
+
+_MOTIVATION_RULES = [
+    (re.compile(r"\b(motivation|motivé|motivée|passion)\b", re.I), "motivation"),
+    (re.compile(r"\b(bloque|bloqué|difficile|j'ai du mal|j'ai mal|décourag|perds|manque de temps)\b", re.I), "difficultés"),
+]
+
+
+def _sentence_around(text, match):
+    """Extrait la phrase contenant le match (tronquée proprement)."""
+    start = text.rfind(".", 0, match.start()) + 1
+    end = text.find(".", match.end())
+    if end == -1:
+        end = len(text)
+    snippet = re.sub(r"\s+", " ", text[start:end])
+    return snippet.strip(" .")[:180]
+
+
+class LearnerProfileService:
+    """Mémoire « qui est cet apprenant » : ce que les coachs savent de lui.
+
+    Les dimensions sont stockées dans `Profile.ai_preferences["learner_profile"]`
+    (partagées entre tous les coachs) afin que chaque agent personnalise ses
+    réponses avec la même connaissance de l'apprenant.
+    """
+
+    @staticmethod
+    def read(user):
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            return {}
+        return dict(profile.ai_preferences.get("learner_profile") or {})
+
+    @staticmethod
+    def load(user):
+        stored = LearnerProfileService.read(user)
+        known = {key: value for key, value in stored.items() if value}
+        missing = [key for key, _ in LEARNER_PROFILE_DIMENSIONS if key not in known]
+
+        lines = []
+        if known:
+            parts = []
+            for key, _ in LEARNER_PROFILE_DIMENSIONS:
+                if key in known:
+                    parts.append(f"{_PROFILE_LABELS[key]} → {known[key]}")
+            lines.append("Profil connu de l'apprenant : " + "; ".join(parts) + ".")
+        else:
+            lines.append("Profil de l'apprenant inconnu (aucune dimension renseignée pour l'instant).")
+        if missing:
+            labels = " ; ".join(_PROFILE_LABELS[key] for key in missing)
+            lines.append(f"Dimensions du profil à découvrir : {labels}.")
+        return {"known": known, "missing": missing, "lines": lines}
+
+    @staticmethod
+    def update(user, updates):
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            return
+        prefs = dict(profile.ai_preferences)
+        stored = dict(prefs.get("learner_profile") or {})
+        stored.update({k: v for k, v in updates.items() if v})
+        prefs["learner_profile"] = stored
+        profile.ai_preferences = prefs
+        profile.save(update_fields=["ai_preferences", "updated_at"])
+
+    @staticmethod
+    def extract_from(user, text):
+        """Détecte des informations sur l'apprenant dans son message et les mémorise."""
+        if not text:
+            return []
+        stored = LearnerProfileService.read(user)
+        updates = {}
+
+        lowered = text.lower()
+        for regex, value in _NIVEAU_RULES:
+            if "niveau" not in stored and regex.search(lowered):
+                updates["niveau"] = value
+                break
+        for regex, value in _METHODE_RULES:
+            if "methode" not in stored and regex.search(lowered):
+                updates["methode"] = value
+                break
+        for regex, value in _STATUT_RULES:
+            if "statut" not in stored and regex.search(lowered):
+                updates["statut"] = value
+                break
+
+        if "objectif" not in stored:
+            for regex, _ in _OBJECTIF_RULES:
+                match = regex.search(text)
+                if match:
+                    updates["objectif"] = _sentence_around(text, match)
+                    break
+        if "disponibilite" not in stored:
+            for regex, label in _DISPONIBILITE_RULES:
+                match = regex.search(text)
+                if match:
+                    value = f"{label} — {_sentence_around(text, match)}"
+                    updates["disponibilite"] = value[:180]
+                    break
+        if "motivation" not in stored:
+            for regex, label in _MOTIVATION_RULES:
+                if regex.search(lowered):
+                    updates["motivation"] = label
+                    break
+
+        if updates:
+            LearnerProfileService.update(user, updates)
+        return list(updates)
 
 
 class LLMProvider:
@@ -24,20 +180,50 @@ class LLMProvider:
 
 
 class MockLLMProvider(LLMProvider):
-    """Deterministic dev provider — no external call, safe in tests/CI."""
+    """Deterministic dev provider — no external call, safe in tests/CI.
+
+    Conscient de son persona : il lit le nom et le domaine du coach dans le
+    system prompt, salue brièvement (politesse + mission) quand on le salue,
+    et répond court sinon — jamais de cours générique déversé d'un coup.
+    """
+
+    _GREETING = re.compile(
+        r"^\s*(bonjour|bonsoir|salut|slt|bjr|hello|hi|coucou|hey|yo|wesh|cc)\b[\s!.,…;:-]*$",
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _persona(system):
+        match = re.search(
+            r"Tu es (\w+),?\s+(?:formateur|formatrice)\s+IA\s+d'ORBITE\s+en\s+([^.\n]+?)\.",
+            system or "",
+            re.IGNORECASE,
+        )
+        if match:
+            return match.group(1).upper(), match.group(2).strip()
+        return "Coach IA", "ton domaine"
 
     def complete(self, *, system, messages):
         last_user = next(
             (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
-        )
+        ).strip()
+        name, domain = self._persona(system)
         if not last_user:
             last_user = "Aucune question détectée."
+        if self._GREETING.match(last_user):
+            return (
+                f"Bonjour à toi ! 😊 Je suis {name}, ton coach d'ORBITE spécialisé "
+                f"en {domain}.\n\n"
+                f"Mon rôle : t'accompagner pas à pas pour progresser à ton rythme, "
+                f"avec des exemples concrets.\n\n"
+                f"Ça te dit de me parler de toi en une phrase (ton objectif, ton "
+                f"niveau actuel) ? On part de là."
+            )
         return (
-            f"[KODEX · aperçu hors-ligne] Tu me demandes : « {last_user[:120]} ». "
-            "Voici comment aborder la notion, pas à pas : "
-            "1) Définis l'idée en une phrase, 2) Prends un exemple concret, "
-            "3) Applique-la à un mini-exercice, 4) Vérifie ta compréhension par une question. "
-            "Dis-moi avec tes mots ce que tu comprends et je poursuis."
+            f"[{name}] J'ai bien noté : « {last_user[:120]} ». Avant de te répondre "
+            f"précisément sur {domain} : où en es-tu exactement sur ce sujet, et "
+            f"qu'est-ce qui te bloque ? Je t'expliquerai avec un exemple concret à "
+            f"ton niveau, une étape à la fois."
         )
 
 
@@ -122,7 +308,9 @@ class ContextBuilder:
         from apps.learning.models import Enrollment, Goal, UserSkill
 
         u = self.user
-        lines = [
+        profile = LearnerProfileService.load(u)
+        lines = profile["lines"]
+        lines += [
             f"Tu t'adresses à {u.full_name} (pseudo : {u.username}).",
             "Méthode ORBITE : tu es un tuteur, pas un simple chatbot. "
             "Explique, reformule, donne un exemple concret, pose une question, "
@@ -138,7 +326,32 @@ class ContextBuilder:
             "Une question courte reçoit une réponse courte et claire. "
             "Développe en profondeur seulement si l'élève le demande ou si la "
             "question est technique — toujours une idée à la fois.",
+            "Accueil : quand l'apprenant te salue (bonjour, salut…), réponds par une "
+            "salutation chaleureuse avec une formule de politesse, puis présente en "
+            "UNE phrase qui tu es et ce que tu fais (ta mission) ; garde l'ensemble "
+            "très court et termine par une question d'accroche pour faire connaissance.",
         ]
+
+        if profile["missing"]:
+            lines += [
+                "Personnalisation stricte : ne fournis JAMAIS une réponse « générique "
+                "pour tout le monde ». Base chaque réponse sur ce que tu sais de "
+                "l'apprenant (voir profil ci-dessus) : utilise son objectif, son statut, "
+                "son niveau, sa disponibilité et sa méthode préférée pour choisir les "
+                "exemples, le rythme et les outils que tu proposes.",
+                "Fais connaissance : le profil est incomplet (dimensions à découvrir). "
+                "Pose UNE question par échange (jamais deux à la suite) sur une dimension "
+                "manquante du profil — pour ouvrir la conversation ou en complément de ta "
+                "réponse — afin d'apprendre à réellement connaître l'apprenant. Quand une "
+                "dimension est renseignée, ne la redemande plus. Reste naturel : tu fais "
+                "connaissance, pas un interrogatoire.",
+            ]
+        else:
+            lines += [
+                "Profil complet : personnalise chaque réponse avec ces informations "
+                "(objectif, statut, niveau, disponibilité, méthode, motivation). "
+                "Si un doute subsiste, pose une question de précision adaptée.",
+            ]
 
         if self.agent is not None:
             rules = self.agent.teaching_rules or []
@@ -148,6 +361,30 @@ class ContextBuilder:
                     + "; ".join(str(rule) for rule in rules)
                     + "."
                 )
+
+        if self.agent is not None:
+            resources = self.agent.resources or []
+            if isinstance(resources, list):
+                items = [
+                    f"{r.get('titre') or r.get('name') or '…'} ({r.get('url', '')})"
+                    for r in resources
+                    if isinstance(r, dict) and r.get("url")
+                ]
+                if items:
+                    lines.append(
+                        f"Ressources externes recommandées par ORBITE (sélection de qualité) : "
+                        + "; ".join(items)
+                        + "."
+                    )
+                    lines.append(
+                        "Usage de ces ressources : ce sont des suggestions de qualité, jamais "
+                        "une publicité. Ne les cite PAS en bloc et n'en parle pas à chaque message : "
+                        "mentionne seulement 1 à 3 liens (jamais toute la liste), avec l'URL exacte, "
+                        "quand c'est réellement utile à la question de l'apprenant (s'entraîner, "
+                        "approfondir, s'outiller, débloquer un sujet). Intègre-les naturellement en une "
+                        "phrase courte. Si la question n'en a pas besoin, n'en parle pas ; ne les "
+                        "favorise jamais de façon biaisée : choisis selon le besoin réel de l'apprenant."
+                    )
 
         if self.session.course_id:
             lines.append(f"Formation suivie : {self.session.course.title}.")
@@ -259,6 +496,9 @@ class AIOrchestrator:
         messages.append({"role": "user", "content": content})
 
         AIMessage.objects.create(session=self.session, role=AIMessage.ROLE_USER, content=content)
+        # Apprendre à connaître l'apprenant : on mémorise les informations qu'il
+        # partage de lui-même (partagées entre tous les coachs).
+        LearnerProfileService.extract_from(self.user, content)
         answer = _get_provider().complete(system=system, messages=messages)
         AIMessage.objects.create(session=self.session, role=AIMessage.ROLE_ASSISTANT, content=answer)
 

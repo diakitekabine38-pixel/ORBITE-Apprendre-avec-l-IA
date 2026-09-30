@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 import { api, apiPost, money } from "../api";
 import { useAuth } from "../auth";
 import { useCart } from "../cart";
+import { useCoach } from "../components/CoachProvider";
+import { Button } from "../components/ui";
 
 const LEVELS = { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" };
 
@@ -11,6 +14,7 @@ export default function CourseDetail() {
   const { user } = useAuth();
   const { refresh: refreshCart } = useCart();
   const navigate = useNavigate();
+  const { openCoach } = useCoach();
 
   const [course, setCourse] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -28,7 +32,7 @@ export default function CourseDetail() {
     setError("");
     try {
       await apiPost("/learning/enrollments/enroll/", { slug });
-      navigate(`/apprentissage/${slug}`);
+      navigate(`/student/apprentissage/${slug}`);
     } catch (e) {
       if (e.status === 402) setNotice("pay");
       else setError(e.message);
@@ -43,7 +47,7 @@ export default function CourseDetail() {
     try {
       await apiPost("/cart/add/", { course_id: course.id });
       refreshCart();
-      navigate("/panier");
+      navigate("/student/panier");
     } catch (e) {
       setError(e.message);
     } finally {
@@ -126,7 +130,9 @@ export default function CourseDetail() {
                 Coach IA : {course.ai_mentor_name || "ton mentor"}
               </h2>
               {course.ai_mentor.description && <p className="mt-2 text-sm text-muted">{course.ai_mentor.description}</p>}
-              <Link to="/chat" className="btn-primary mt-4">Discuter avec ton coach</Link>
+              <Button className="mt-4" icon={MessageCircle} onClick={openCoach} disabled={!user}>
+                Discuter avec ton coach
+              </Button>
             </div>
           )}
         </div>

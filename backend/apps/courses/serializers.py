@@ -105,6 +105,34 @@ class CourseDetailSerializer(CourseListSerializer):
         ]
 
 
+class CourseAdminSerializer(CourseDetailSerializer):
+    """Instructors & admins get the moderation surface (status + actionable flags).
+
+    Only affects serialization: the endpoints enforce roles via permissions.
+    """
+
+    status = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    instructor = serializers.IntegerField(source="instructor.id", read_only=True)
+
+    class Meta(CourseDetailSerializer.Meta):
+        fields = CourseDetailSerializer.Meta.fields + ["status", "created_at", "updated_at", "instructor"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        user = self.context["request"].user
+        is_admin = user.is_admin()
+        owner = user.is_instructor() and user.id == instance.instructor_id
+        data["can_submit"] = owner and instance.status == Course.STATUS_DRAFT
+        data["can_start_review"] = is_admin and instance.status == Course.STATUS_SUBMITTED
+        data["can_approve"] = is_admin and instance.status == Course.STATUS_IN_REVIEW
+        data["can_publish"] = is_admin and instance.status == Course.STATUS_APPROVED
+        data["can_unpublish"] = is_admin and instance.status == Course.STATUS_PUBLISHED
+        data["can_edit"] = owner
+        return data
+
+
 class CourseWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course

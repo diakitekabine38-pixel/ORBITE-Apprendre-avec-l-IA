@@ -129,7 +129,7 @@ export default function Learn() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-muted">
-        <Link to="/dashboard" className="link">Mon espace</Link>
+        <Link to="/student" className="link">Mon espace</Link>
         <span className="mx-1">/</span>
         <Link to={`/formations/${course.slug}`} className="link">{course.title}</Link>
       </nav>

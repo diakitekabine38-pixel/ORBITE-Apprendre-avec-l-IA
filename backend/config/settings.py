@@ -24,7 +24,7 @@ SECRET_KEY = os.environ.get(
     "ORBITE_SECRET_KEY",
     "django-insecure-dev-only-change-me-in-production",
 )
-DEBUG = os.environ.get("ORBITE_DEBUG", "1") == "1"
+DEBUG = os.environ.get("ORBITE_DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.environ.get("ORBITE_ALLOWED_HOSTS", "*").split(",")
 
 # ---------------------------------------------------------------------------

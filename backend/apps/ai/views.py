@@ -15,6 +15,7 @@ from .serializers import (
     ChatPromptSerializer,
     RecommendationSerializer,
 )
+from .services import LEARNER_PROFILE_DIMENSIONS, LearnerProfileService
 
 
 class AgentViewSet(viewsets.ReadOnlyModelViewSet):
@@ -101,6 +102,20 @@ class ChatViewSet(viewsets.ModelViewSet):
         return Response(
             {"session": session_serializer.data, "answer": answer},
             status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["get"])
+    def profile(self, request):
+        """Portrait de l'apprenant vu par les coachs (ce qui est connu, ce qui reste à découvrir)."""
+        data = LearnerProfileService.load(request.user)
+        return Response(
+            {
+                "known": data["known"],
+                "missing": data["missing"],
+                "dimensions": [
+                    {"key": key, "label": label} for key, label in LEARNER_PROFILE_DIMENSIONS
+                ],
+            }
         )
 
     @action(detail=True, methods=["post"])

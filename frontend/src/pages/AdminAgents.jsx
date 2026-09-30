@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Bot } from "lucide-react";
 import { api, apiPost, apiPatch } from "../api";
 import { useAuth } from "../auth";
+import { roleHome } from "../navigation";
+import { useCoach } from "../components/CoachProvider";
+import { Button } from "../components/ui";
 
 const EXPERTISE = ["beginner", "intermediate", "advanced"];
 
@@ -12,6 +16,7 @@ const EMPTY = {
   personality: "",
   system_prompt: "",
   teaching_rules: [] ,
+  resources: [],
   expertise: "intermediate",
   color: "#7C3AED",
   model: "",
@@ -21,10 +26,12 @@ const EMPTY = {
 export default function AdminAgents() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { openCoach } = useCoach();
 
   const [agents, setAgents] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [teachingText, setTeachingText] = useState("");
+  const [resourcesText, setResourcesText] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -34,7 +41,7 @@ export default function AdminAgents() {
 
   useEffect(() => {
     if (!isAdmin) {
-      navigate("/dashboard", { replace: true });
+      navigate(roleHome(user), { replace: true });
       return;
     }
     api("/ai/admin/agents/")
@@ -53,23 +60,43 @@ export default function AdminAgents() {
       personality: agent.personality || "",
       system_prompt: agent.system_prompt || "",
       teaching_rules: agent.teaching_rules || [],
+      resources: agent.resources || [],
       expertise: agent.expertise || "intermediate",
       color: agent.color || "#7C3AED",
       model: agent.model || "",
       is_active: agent.is_active,
     });
     setTeachingText((agent.teaching_rules || []).join("\n"));
+    setResourcesText(
+      (agent.resources || [])
+        .map((r) => [r.titre || r.name || "", r.url || "", r.description || ""].join(" | "))
+        .join("\n")
+    );
   }
 
   function reset() {
     setEditingId(null);
     setForm(EMPTY);
     setTeachingText("");
+    setResourcesText("");
     setError("");
     setNotice("");
   }
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  function parseResources(text) {
+    return text
+      .split("\n")
+      .map((line) => line.split("|").map((part) => part.trim()))
+      .filter((parts) => parts.length >= 2 && parts[1])
+      .map(([titre, url, description = ""]) => ({
+        titre: titre || url,
+        url,
+        description,
+        gratuit: true,
+      }));
+  }
 
   async function save(e) {
     e.preventDefault();
@@ -83,6 +110,7 @@ export default function AdminAgents() {
         .split("\n")
         .map((line) => line.trim())
         .filter(Boolean),
+      resources: parseResources(resourcesText),
     };
     try {
       if (editingId) {
@@ -133,10 +161,11 @@ export default function AdminAgents() {
           <h1 className="text-3xl font-bold">Personnalisation des agents IA</h1>
           <p className="mt-1 text-muted">
             Chaque agent joue un rôle : « system_prompt » définit la personnalité, « teaching_rules »
-            les règles de tutorat. Les changements sont appliqués dès le prochain message.
+            les règles de tutorat, « resources » les liens externes de qualité (cités par l'agent
+            seulement quand c'est utile). Les changements sont appliqués dès le prochain message.
           </p>
         </div>
-        <Link to="/chat" className="btn-ghost text-sm">Tester dans le chat →</Link>
+        <Button variant="ghost" size="sm" icon={Bot} onClick={openCoach}>Tester le Coach IA →</Button>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -218,6 +247,13 @@ export default function AdminAgents() {
             placeholder="Règles de tutorat — une par ligne (ex. Expliquer simplement, Poser une question)"
             value={teachingText}
             onChange={(e) => setTeachingText(e.target.value)}
+          />
+          <textarea
+            className="input resize-none font-mono text-xs"
+            rows={4}
+            placeholder={'Ressources externes — une par ligne : Titre | URL | Description\n(ex. France IO | https://www.france-ioi.org | Plateforme gratuite d\'algorithmique)'}
+            value={resourcesText}
+            onChange={(e) => setResourcesText(e.target.value)}
           />
           <textarea
             className="input resize-none font-mono text-xs"

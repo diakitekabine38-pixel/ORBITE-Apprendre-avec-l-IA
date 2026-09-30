@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import { resolvePostLogin } from "../navigation";
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = location.state?.from?.pathname;
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -17,8 +18,8 @@ export default function Login() {
     setBusy(true);
     setError("");
     try {
-      await login(form.email, form.password);
-      navigate(from, { replace: true });
+      const me = await login(form.email, form.password);
+      navigate(resolvePostLogin(me, from), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

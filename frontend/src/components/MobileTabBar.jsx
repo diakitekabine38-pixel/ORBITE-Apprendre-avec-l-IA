@@ -1,33 +1,12 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../auth";
-
-function TabIcon({ label }) {
-  const icons = {
-    Accueil: "🏠",
-    Catalogue: "📚",
-    "Coach IA": "✨",
-    Orbite: "🛰️",
-    "Mon Espace": "📊",
-    Connexion: "🔑",
-  };
-  return <span className="text-lg leading-none">{icons[label] || "•"}</span>;
-}
+import { mobileItemsFor } from "../navigation";
 
 export default function MobileTabBar() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const items = [
-    { to: "/", label: "Accueil", exact: true },
-    { to: "/catalogue", label: "Catalogue" },
-    { to: "/chat", label: "Coach IA", highlight: true },
-    ...(user
-      ? [
-          { to: "/app/orbite", label: "Orbite" },
-          { to: "/dashboard", label: "Mon Espace" },
-        ]
-      : [{ to: "/login", label: "Connexion" }]),
-  ];
+  const items = mobileItemsFor(user);
 
   return (
     <nav
@@ -37,31 +16,22 @@ export default function MobileTabBar() {
     >
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1.5">
         {items.map((item) => {
-          const isActive = item.exact
+          const isActive = item.to === "/"
             ? location.pathname === item.to
             : location.pathname.startsWith(item.to);
           return (
             <NavLink
-              key={item.label}
+              key={item.key}
               to={item.to}
               className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1.5 transition-all duration-200 active:scale-90 ${
-                isActive
-                  ? "font-semibold text-brand"
-                  : "text-muted hover:text-ink-deep"
+                isActive ? "font-semibold text-brand" : "text-muted hover:text-ink-deep"
               }`}
             >
               <span className="relative">
-                <TabIcon label={item.label} />
-                {item.highlight && !isActive && (
-                  <span className="absolute -top-0.5 -right-1.5 h-2 w-2 animate-pulse rounded-full bg-cyan-400" />
-                )}
+                <item.icon className="h-5 w-5" />
               </span>
-              <span className="max-w-full truncate text-[10px] tracking-tight">
-                {item.label}
-              </span>
-              {isActive && (
-                <span className="absolute -bottom-1 h-0.5 w-5 rounded-full bg-brand" />
-              )}
+              <span className="max-w-full truncate text-[10px] tracking-tight">{item.label}</span>
+              {isActive && <span className="absolute -bottom-1 h-0.5 w-5 rounded-full bg-brand" />}
             </NavLink>
           );
         })}

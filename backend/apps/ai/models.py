@@ -13,6 +13,14 @@ class AIAgent(models.Model):
     personality = models.TextField(blank=True)
     system_prompt = models.TextField(blank=True)
     teaching_rules = models.JSONField(default=list, blank=True)
+    resources = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=(
+            "Ressources externes recommandées par ORBITE. Chaque entrée : "
+            '{"titre": "...", "url": "...", "description": "...", "gratuit": true}.'
+        ),
+    )
     expertise = models.CharField(max_length=64, default="intermediate")
     color = models.CharField(max_length=16, default="#7C5CFF")
     model = models.CharField(max_length=64, blank=True)
