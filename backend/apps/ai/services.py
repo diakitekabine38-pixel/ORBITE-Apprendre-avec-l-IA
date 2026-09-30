@@ -68,6 +68,13 @@ _MOTIVATION_RULES = [
     (re.compile(r"\b(bloque|bloqué|difficile|j'ai du mal|j'ai mal|décourag|perds|manque de temps)\b", re.I), "difficultés"),
 ]
 
+# Messages purement sociaux : pas d'extraction de profil (ni reconfiance au LLM).
+_GREETING_LIKE = re.compile(
+    r"^\s*(bonjour|bonsoir|salut|slt|bjr|hello|hi|coucou|hey|yo|wesh|cc|merci|ok|okay|"
+    r"d'accord|dacc|super|génial|nickel|parfait)\b[\s!.,…;:-]*$",
+    re.IGNORECASE,
+)
+
 
 def _sentence_around(text, match):
     """Extrait la phrase contenant le match (tronquée proprement)."""
@@ -127,6 +134,54 @@ class LearnerProfileService:
         profile.save(update_fields=["ai_preferences", "updated_at"])
 
     @staticmethod
+    def _extract_json(raw):
+        """Parse le JSON renvoyé par le LLM même s'il est entouré de texte."""
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start == -1 or end == -1:
+            return {}
+        try:
+            data = json.loads(raw[start : end + 1])
+        except ValueError:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    @staticmethod
+    def _llm_extract(user, text):
+        """Extraction de profil par le LLM pour les dimensions encore inconnues."""
+
+        stored = LearnerProfileService.read(user)
+        missing = [k for k, _ in LEARNER_PROFILE_DIMENSIONS if not (stored.get(k) or "").strip()]
+        if not missing or len(text) < 20:
+            return {}
+        known = "; ".join(f"{k} → {stored[k]}" for k, _ in LEARNER_PROFILE_DIMENSIONS if stored.get(k)) or "aucune"
+        possible = " ; ".join(f"{key} ({label})" for key, label in LEARNER_PROFILE_DIMENSIONS)
+        system = (
+            "Tu maintiens le profil d'un apprenant pour des tuteurs IA."
+            "Dimensions possibles : " + possible + "."
+            "Déjà connues (ne pas les répéter) : " + known + "."
+            "Extrais depuis le message UTILISATEUR uniquement les dimensions "
+            "EXPLICITEMENT exprimées (pas d'inférence hasardeuse). Réponds STRICTEMENT "
+            'en JSON sans texte autour, ex : {"statut": "étudiante", "niveau": "débutante"}. '
+            "Pour objectif et motivation : une phrase courte (max 100 caractères). "
+            "Pour les dimensions courtes (statut, niveau, methode, disponibilite) : 1-4 mots. "
+            'Renvoie {} si rien de nouveau/utile est exprimé.'
+        )
+        try:
+            raw = _get_provider().complete(
+                system=system, messages=[{"role": "user", "content": text[:1500]}]
+            )
+            payload = LearnerProfileService._extract_json(raw)
+            keys = {key for key, _ in LEARNER_PROFILE_DIMENSIONS}
+            return {
+                key: str(value).strip()[:180]
+                for key, value in payload.items()
+                if key in keys and str(value).strip() not in ("", "null", "None", "-", "inconnu")
+            }
+        except (json.JSONDecodeError, ValueError):  # noqa: PERF203
+            return {}
+
+    @staticmethod
     def extract_from(user, text):
         """Détecte des informations sur l'apprenant dans son message et les mémorise."""
         if not text:
@@ -166,6 +221,9 @@ class LearnerProfileService:
                 if regex.search(lowered):
                     updates["motivation"] = label
                     break
+
+        if text.strip() and not _GREETING_LIKE.search(text):
+            updates.update(LearnerProfileService._llm_extract(user, text))
 
         if updates:
             LearnerProfileService.update(user, updates)
@@ -332,6 +390,12 @@ class ContextBuilder:
             "très court et termine par une question d'accroche pour faire connaissance.",
         ]
 
+        if self.session and self.session.summary:
+            lines.append(
+                "Résumé de la conversation passée (mémoire longue, à garder en tête) : "
+                + self.session.summary
+            )
+
         if profile["missing"]:
             lines += [
                 "Personnalisation stricte : ne fournis JAMAIS une réponse « générique "
@@ -388,6 +452,26 @@ class ContextBuilder:
 
         if self.session.course_id:
             lines.append(f"Formation suivie : {self.session.course.title}.")
+            from .models import AIContext
+
+            contexts = AIContext.objects.filter(course=self.session.course)[:4]
+            if contexts:
+                chunks = []
+                for ctx in contexts:
+                    snippet = re.sub(r"\s+", " ", (ctx.content or "")).strip()[:300]
+                    if snippet:
+                        chunks.append(f"{ctx.source}: {snippet}")
+                if chunks:
+                    lines.append(
+                        "Base de connaissances ORBITE de la formation (faits vérifiés) : "
+                        + " | ".join(chunks)
+                        + "."
+                    )
+                    lines.append(
+                        "Ces extraits sont la référence ORBITE pour cette formation : "
+                        "appuie-toi dessus en priorité quand la question touche au contenu "
+                        "de la formation, puis complète avec ton expérience."
+                    )
         if self.session.lesson_id:
             lesson = self.session.lesson
             module = lesson.module
@@ -451,9 +535,78 @@ class ContextBuilder:
 
 
 class AIOrchestrator:
+    # Signaux indiquant qu'une info fraîche/actuelle peut être nécessaire.
+    _SEARCH_SIGNALS = re.compile(
+        r"\b(actuel|actuelle|actuellement|récent|récente|récemment|aujourd'?hui|"
+        r"cette année|ce mois|dernière|dernières|dernier|derniers|actualité|news|"
+        r"tendance|tendances|mise à jour|maj|sortie|stable|nouveaut|nouvelle version|"
+        r"version \d|disponible|tarif|prix|salaire|chiffre|évolut|prochaine)\b",
+        re.IGNORECASE,
+    )
+
     def __init__(self, user, session=None):
         self.user = user
         self.session = session
+
+    @staticmethod
+    def _should_search(content):
+        if not getattr(settings, "ORBITE_WEB_SEARCH", True):
+            return False
+        if getattr(settings, "ORBITE_LLM_PROVIDER", "mock").lower() == "mock":
+            return False
+        text = content.strip()
+        if len(text) < 15 or len(text) > 400:
+            return False
+        if any(token in text.lower() for token in ("http://", "https://", "www.")):
+            return False
+        return AIOrchestrator._SEARCH_SIGNALS.search(text) is not None
+
+    @staticmethod
+    def _web_search_block(content):
+        from .websearch import search_web
+
+        try:
+            results = search_web(content)
+        except Exception:  # noqa: BLE001
+            return ""
+        selected = results[:3]
+        if not selected:
+            return ""
+        lines = ["Contexte en ligne (résultats de recherche web récupérés à l'instant par ORBITE) :"]
+        for item in selected:
+            lines.append(
+                f"- {item['titre']} — {item['url']} — {item['description'][:200]}"
+            )
+        lines.append(
+            "Sers-toi de ces sources pour répondre si elles sont pertinentes, cite-les "
+            "avec leur URL exacte en fin de réponse, signale honnêtement les limites et "
+            "garde le ton doux du tuteur. Si elles ne répondent pas à la question, dis-le "
+            "clairement plutôt que d'inventer."
+        )
+        return "\n".join(lines)
+
+    @staticmethod
+    def _maybe_regenerate_summary(session):
+        """Résumé roulant : tous les 20 messages, condense le récent dans `session.summary`."""
+        count = session.messages.count()
+        if count < 20 or count % 20 != 0:
+            return
+        recent = list(session.messages.order_by("id").values_list("role", "content")[count - 20 :])
+        transcript = "\n".join(f"{role.upper()}: {content[:280]}" for role, content in recent)
+        prompt = (
+            "Résume cette conversation de tutorat en quelques lignes factuelles "
+            "(objectif de l'apprenant, niveau, progrès, sujets abordés, points bloquants, "
+            "promesses faites). Max 8 lignes, en français, uniquement les faits."
+        )
+        try:
+            new_summary = _get_provider().complete(
+                system=prompt, messages=[{"role": "user", "content": transcript[:12000]}]
+            )
+        except Exception:  # noqa: BLE001 - le résumé ne doit jamais casser le chat
+            return
+        if new_summary and new_summary.strip():
+            session.summary = new_summary.strip()
+            session.save(update_fields=["summary", "updated_at"])
 
     def select_agent(self, agent_id=None):
         from .models import AIAgent
@@ -492,6 +645,11 @@ class AIOrchestrator:
             self.session.messages.order_by("id").values_list("role", "content")[:20]
         )
         system = f"{agent.system_prompt or agent.personality}\n{ContextBuilder(self.user, self.session, agent).build()}"
+
+        web_context = self._web_search_block(content) if self._should_search(content) else ""
+        if web_context:
+            system += "\n" + web_context
+
         messages = [{"role": role, "content": content} for role, content in history]
         messages.append({"role": "user", "content": content})
 
@@ -501,13 +659,18 @@ class AIOrchestrator:
         LearnerProfileService.extract_from(self.user, content)
         answer = _get_provider().complete(system=system, messages=messages)
         AIMessage.objects.create(session=self.session, role=AIMessage.ROLE_ASSISTANT, content=answer)
+        self._maybe_regenerate_summary(self.session)
 
         from apps.analytics.models import Event
 
         Event.objects.create(
             user=self.user,
             event_type="ai_session_started",
-            context={"agent": agent.code, "session": self.session.id},
+            context={
+                "agent": agent.code,
+                "session": self.session.id,
+                "web_search": bool(web_context),
+            },
         )
         return self.session, answer
 

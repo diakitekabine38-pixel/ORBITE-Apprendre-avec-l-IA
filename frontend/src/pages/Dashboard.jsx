@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Award, Sparkles } from "lucide-react";
+import { Award, Sparkles, Target, TrendingUp } from "lucide-react";
 import { api, apiPost } from "../api";
 import { useAuth } from "../auth";
+
+const PROFILE_LABELS = {
+  objectif: "Objectif",
+  statut: "Statut",
+  niveau: "Niveau",
+  disponibilite: "Disponibilité",
+  methode: "Méthode",
+  motivation: "Motivation",
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -56,6 +65,59 @@ export default function Dashboard() {
           <p className="text-sm text-muted">Objectifs actifs : {data.goals.join(" · ")}</p>
         </div>
       )}
+
+      <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="glass flex flex-col gap-2 border-glow/30 bg-gradient-to-br from-glow/10 via-transparent to-transparent p-5">
+          <p className="flex items-center gap-2 font-medium">
+            <TrendingUp className="h-4 w-4 text-glow" />
+            Prochaine action
+          </p>
+          {data?.next_action ? (
+            <>
+              <p className="text-sm text-muted">{data.next_action.rationale}</p>
+              <Link
+                to={`/student/apprentissage/${data.next_action.course_slug}`}
+                className="btn-primary mt-1 w-fit !py-2 text-xs"
+              >
+                Continuer
+              </Link>
+            </>
+          ) : (
+            <p className="text-sm text-muted">
+              Inscris-toi à une formation pour définir ta prochaine étape.
+            </p>
+          )}
+        </div>
+
+        <div className="glass flex flex-col gap-2 p-5">
+          <p className="flex items-center gap-2 font-medium">
+            <Target className="h-4 w-4 text-brand" />
+            Ton profil apprenant
+          </p>
+          {(() => {
+            const profile = data?.learner_profile || {};
+            const known = Object.entries(profile).filter(([, value]) => value);
+            if (known.length === 0) {
+              return (
+                <p className="text-sm text-muted">
+                  Parle de toi à ton coach IA (objectif, niveau, temps dispo) — il
+                  adaptera chaque réponse.
+                </p>
+              );
+            }
+            return (
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm">
+                {known.map(([key, value]) => (
+                  <div key={key} className="flex justify-between gap-3">
+                    <dt className="text-muted">{PROFILE_LABELS[key] || key}</dt>
+                    <dd className="text-right font-medium">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            );
+          })()}
+        </div>
+      </div>
 
       <div className="glass mt-8 flex flex-col items-start justify-between gap-4 border-brand/30 bg-gradient-to-r from-brand/10 via-transparent to-cyan-500/10 p-5 sm:flex-row sm:items-center">
         <div>

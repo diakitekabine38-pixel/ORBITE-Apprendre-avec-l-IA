@@ -35,6 +35,14 @@ class LearningEngine:
         enrollment.last_lesson = lesson
         enrollment.save(update_fields=["last_lesson", "updated_at"])
         enrollment.recompute_progress()
+
+        from apps.analytics.models import Event
+
+        Event.objects.create(
+            user=self.user,
+            event_type="lesson_completed",
+            context={"course_slug": enrollment.course.slug, "lesson": lesson.id},
+        )
         if enrollment.completed:
             from apps.certificates.service import CertificateService
 

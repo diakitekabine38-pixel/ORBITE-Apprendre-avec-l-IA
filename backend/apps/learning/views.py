@@ -57,6 +57,14 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
         enrollment, created = Enrollment.objects.get_or_create(user=request.user, course=course)
+        if created:
+            from apps.analytics.models import Event
+
+            Event.objects.create(
+                user=request.user,
+                event_type="course_enrolled",
+                context={"course_slug": course.slug, "free": course.is_free},
+            )
         return Response(
             EnrollmentSerializer(enrollment, context={"request": request}).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
@@ -66,12 +74,27 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
     def dashboard(self, request):
         """Module 18 — Vue centralisée de l'apprenant."""
         qs = Enrollment.objects.filter(user=request.user).select_related("course__category")
+        from apps.ai.services import LearnerProfileService
+        from .services import recommend_next_action
+
+        recs = recommend_next_action(request.user, limit=1)
+
         data = {
             "enrollments": EnrollmentSerializer(qs, many=True, context={"request": request}).data,
             "streak_days": request.user.profile.ai_preferences.get("streak_days", 0),
             "xp": request.user.xp,
             "level": request.user.level,
             "goals": [g.title for g in Goal.objects.filter(user=request.user, status=Goal.STATUS_ACTIVE)],
+            "learner_profile": LearnerProfileService.read(request.user),
+            "next_action": (
+                {
+                    "course_slug": recs[0].course.slug,
+                    "rationale": recs[0].rationale,
+                    "score": recs[0].score,
+                }
+                if recs
+                else None
+            ),
         }
         return Response(data)
 
@@ -98,6 +121,13 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
         if lp.status == LessonProgress.STATUS_NOT_STARTED:
             lp.status = LessonProgress.STATUS_IN_PROGRESS
             lp.save(update_fields=["status", "updated_at"])
+            from apps.analytics.models import Event
+
+            Event.objects.create(
+                user=request.user,
+                event_type="lesson_started",
+                context={"course_slug": enrollment.course.slug, "lesson": lesson.id},
+            )
         return Response(LessonProgressSerializer(lp).data)
 
     @action(detail=False, methods=["post"])

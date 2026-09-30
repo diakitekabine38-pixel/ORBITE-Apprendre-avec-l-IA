@@ -58,3 +58,21 @@ class DashboardStatsViewSet(viewsets.ViewSet):
                 "events_24h": Event.objects.filter(created_at__gte=now - timezone.timedelta(hours=24)).count(),
             }
         )
+
+    @action(detail=False, methods=["get"])
+    def funnel(self, request):
+        """Regression tunnel : compteurs par étape sur les 30 derniers jours."""
+        since = timezone.now() - timezone.timedelta(days=30)
+        rows = (
+            Event.objects.filter(created_at__gte=since)
+            .values("event_type")
+            .annotate(count=Count("id"))
+            .order_by("event_type")
+        )
+        return Response(
+            {
+                "since": since.date().isoformat(),
+                "events": list(rows),
+                "labels": dict(Event.EVENT_CHOICES),
+            }
+        )

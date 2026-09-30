@@ -48,6 +48,10 @@ class AISession(TimeStampedModel):
         "courses.Lesson", related_name="ai_sessions", on_delete=models.SET_NULL, null=True, blank=True
     )
     title = models.CharField(max_length=200, blank=True, default="")
+    summary = models.TextField(
+        blank=True,
+        help_text="Résumé roulant des échanges passés (mémoire longue des sessions).",
+    )
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
 
     class Meta:

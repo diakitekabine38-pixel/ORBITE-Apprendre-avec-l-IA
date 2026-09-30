@@ -5,6 +5,7 @@ import { useCart } from "../cart";
 import { publicNavLinks } from "../navigation";
 import ThemeToggle from "./ThemeToggle";
 import Brand from "./Brand";
+import NotificationBell from "./NotificationBell";
 
 const navLink = ({ isActive }) =>
   `px-3 py-2 text-sm rounded-lg transition ${isActive ? "text-brand bg-ivory-soft" : "text-muted hover:text-ink-deep"}`;
@@ -33,6 +34,7 @@ export default function Navbar() {
           <ThemeToggle />
           {user ? (
             <>
+              <NotificationBell />
               {user.role === "student" && (
                 <Link
                   to="/student/panier"

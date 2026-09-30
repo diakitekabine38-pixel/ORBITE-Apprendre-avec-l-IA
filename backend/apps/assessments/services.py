@@ -52,11 +52,35 @@ def grade_attempt(user, quiz, answers, time_spent_seconds=0):
         passed=passed,
         time_spent_seconds=time_spent_seconds,
     )
+
+    from apps.analytics.models import Event
+
+    Event.objects.create(
+        user=user,
+        event_type="quiz_completed",
+        context={
+            "quiz": quiz.id,
+            "score": score,
+            "passed": passed,
+            "course_slug": quiz.lesson.module.course.slug,
+        },
+    )
+
     if passed:
         user.add_xp(XP_QUIZ)
         # Push a mastery signal into the skills layer when the quiz links a skill.
         for q in questions:
             _touch_skill(user, quiz)
+
+        from apps.notifications.models import Notification
+
+        Notification.objects.create(
+            user=user,
+            notification_type=Notification.TYPE_PEDAGOGIC,
+            title="Quiz réussi",
+            message=f"Bravo, tu as obtenu {score}% au quiz « {quiz.title} ».",
+            link=f"/student/apprentissage/{quiz.lesson.module.course.slug}",
+        )
     return attempt, detail
 
 

@@ -71,3 +71,26 @@ class PaymentApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         codes = [m["code"] for m in response.data["results"]]
         self.assertIn("manual", codes)
+
+
+class StripeProviderTests(TestCase):
+    def setUp(self):
+        self.student = make_user("stripe")
+        self.instructor = make_user("prof", role="instructor")
+        self.method = PaymentMethod.objects.create(name="Carte bancaire", code="stripe")
+        self.course = make_course(instructor=self.instructor, price=12000, title="Stripe")
+        self.order = create_order(self.student, [self.course.id])
+
+    def test_stripe_initialise_sans_cle_renvoie_une_erreur_claire(self):
+        from apps.payments.service import StripeProvider
+
+        provider = StripeProvider()
+        self.assertFalse(provider.is_configured())
+        with self.assertRaisesRegex(RuntimeError, "ORBITE_STRIPE_SECRET_KEY"):
+            provider.initialize(Payment.objects.create(order=self.order, method=self.method, amount=12000))
+
+    def test_stripe_est_resolu_par_payment_service(self):
+        from apps.payments.service import PaymentService
+
+        service = PaymentService("stripe")
+        self.assertEqual(service.provider.code, "stripe")

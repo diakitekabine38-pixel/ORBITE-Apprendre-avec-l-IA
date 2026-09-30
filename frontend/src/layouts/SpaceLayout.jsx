@@ -7,6 +7,7 @@ import Brand from "../components/Brand";
 import ThemeToggle from "../components/ThemeToggle";
 import Footer from "../components/Footer";
 import MobileTabBar from "../components/MobileTabBar";
+import NotificationBell from "../components/NotificationBell";
 
 export default function SpaceLayout({ route, navKey }) {
   const { user, logout } = useAuth();
@@ -32,6 +33,7 @@ export default function SpaceLayout({ route, navKey }) {
         links={topLinks}
         actions={
           <>
+            <NotificationBell />
             <span className="hidden rounded-full bg-brand/15 px-2.5 py-1 text-xs font-semibold text-brand sm:block">
               Nv.{user?.level ?? 1} · {user?.xp ?? 0} XP
             </span>

@@ -41,6 +41,9 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        from apps.analytics.models import Event
+
+        Event.objects.create(user=user, event_type="user_registered", context={"source": "form"})
         send_verification_email(user)
         return Response(
             UserSerializer(user).data, status=status.HTTP_201_CREATED

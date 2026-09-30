@@ -22,6 +22,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
         self.get_queryset().update(is_read=True)
         return Response({"detail": "Notifications marquées comme lues."})
 
+    @action(detail=False, methods=["get"])
+    def unread_count(self, request):
+        return Response({"count": self.get_queryset().filter(is_read=False).count()})
+
     @action(detail=True, methods=["post"])
     def mark_read(self, request, pk=None):
         notification = self.get_object()

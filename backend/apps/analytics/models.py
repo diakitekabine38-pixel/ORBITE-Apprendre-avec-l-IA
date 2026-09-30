@@ -8,6 +8,8 @@ class Event(TimeStampedModel):
     """Analytics events: lesson_started, lesson_completed, course_purchased…"""
 
     EVENT_CHOICES = [
+        ("user_registered", "Compte créé"),
+        ("course_enrolled", "Formation rejointe"),
         ("lesson_started", "Leçon démarrée"),
         ("lesson_completed", "Leçon terminée"),
         ("quiz_completed", "Quiz terminé"),

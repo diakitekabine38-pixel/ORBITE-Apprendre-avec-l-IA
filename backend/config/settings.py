@@ -257,6 +257,16 @@ ORBITE_LLM_BASE_URL = os.environ.get(
 # activated through this variable (e.g. "orange_money" once validated).
 ORBITE_PAYMENT_PROVIDER = os.environ.get("ORBITE_PAYMENT_PROVIDER", "manual")
 
+# Stripe (PSP réel) : actif seulement si la clé secrète est renseignée.
+ORBITE_STRIPE_SECRET_KEY = os.environ.get("ORBITE_STRIPE_SECRET_KEY", "")
+ORBITE_STRIPE_PUBLISHABLE_KEY = os.environ.get("ORBITE_STRIPE_PUBLISHABLE_KEY", "")
+ORBITE_STRIPE_WEBHOOK_SECRET = os.environ.get("ORBITE_STRIPE_WEBHOOK_SECRET", "")
+
+# Web search for AI coaches ("1"=on). Disabled in tests via the mock provider.
+ORBITE_WEB_SEARCH = os.environ.get("ORBITE_WEB_SEARCH", "1") == "1"
+# Search engine optimisé IA (optionnel) — si la clé est renseignée, il prime sur Wikipédia.
+ORBITE_TAVILY_API_KEY = os.environ.get("ORBITE_TAVILY_API_KEY", "")
+
 # Certificate authority
 CERTIFICATE_PREFIX = os.environ.get("ORBITE_CERT_PREFIX", "ORB")
 CERTIFICATE_ISSUER = os.environ.get("ORBITE_CERT_ISSUER", "ORBITE by Kweb")

@@ -151,6 +151,7 @@ export function mobileItemsFor(user) {
     return items;
   }
   for (const item of navFor(user)) {
+    if (item.key === "certificats") continue;
     items.push({ key: item.key, label: item.label, to: item.to, icon: item.icon });
   }
   return items;

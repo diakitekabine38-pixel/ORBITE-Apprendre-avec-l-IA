@@ -33,4 +33,24 @@ class CertificateService:
                 "qr_token": uuid.uuid4().hex,
             },
         )
+        if created:
+            from apps.analytics.models import Event
+
+            Event.objects.create(
+                user=enrollment.user,
+                event_type="certificate_issued",
+                context={"course_slug": enrollment.course.slug, "certificate_id": certificate.id},
+            )
+            try:
+                from apps.notifications.models import Notification
+
+                Notification.objects.create(
+                    user=enrollment.user,
+                    notification_type=Notification.TYPE_SYSTEM,
+                    title="Certificat délivré",
+                    message=f"Félicitations ! Ton certificat « {enrollment.course.title} » est prêt.",
+                    link="/student/certificats",
+                )
+            except Exception:  # noqa: BLE001
+                pass
         return certificate
