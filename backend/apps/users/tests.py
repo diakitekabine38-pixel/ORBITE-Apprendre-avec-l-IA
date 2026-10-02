@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 class AuthTests(APITestCase):
-    def test_register_verify_login_me_flow(self):
+    def test_register_is_immediately_active_and_logged_in(self):
         register = self.client.post(
             "/api/v1/auth/register/",
             {
@@ -24,23 +24,13 @@ class AuthTests(APITestCase):
         )
         self.assertEqual(register.status_code, status.HTTP_201_CREATED)
         self.assertEqual(register.data["role"], "student")
+        self.assertIn("access", register.data, "connexion immédiate attendue")
+        self.assertIn("refresh", register.data)
 
         user = User.objects.get(username="nouveau")
-        self.assertFalse(user.is_active, "un compte non vérifié ne doit pas être actif")
-
-        blocked = self.client.post(
-            "/api/v1/auth/login/",
-            {"username": "nouveau", "password": "StrongPass123!"},
-            format="json",
-        )
-        self.assertEqual(blocked.status_code, status.HTTP_401_UNAUTHORIZED)
-
-        verify = self.client.get(
-            f"/api/v1/auth/verify-email/{user.email_verification_token}/"
-        )
-        self.assertEqual(verify.status_code, status.HTTP_200_OK)
-        user.refresh_from_db()
-        self.assertTrue(user.is_active)
+        self.assertTrue(user.is_active, "l'inscription active directement le compte")
+        self.assertTrue(user.email_verified, "pas de phase de vérification par email")
+        self.assertEqual(user.email_verification_token, "")
 
         login = self.client.post(
             "/api/v1/auth/login/",
@@ -50,7 +40,7 @@ class AuthTests(APITestCase):
         self.assertEqual(login.status_code, status.HTTP_200_OK)
         self.assertIn("access", login.data)
 
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {register.data['access']}")
         me = self.client.get("/api/v1/auth/me/")
         self.assertEqual(me.status_code, status.HTTP_200_OK)
         self.assertEqual(me.data["email"], "nouveau@orbite.test")
@@ -71,7 +61,7 @@ class AuthTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_unverified_email_can_register_again_without_revealing_existence(self):
+    def test_duplicate_email_rejected(self):
         first = self.client.post(
             "/api/v1/auth/register/",
             {
@@ -85,7 +75,6 @@ class AuthTests(APITestCase):
             format="json",
         )
         self.assertEqual(first.status_code, status.HTTP_201_CREATED)
-        first_user_id = first.data["id"]
 
         second = self.client.post(
             "/api/v1/auth/register/",
@@ -99,16 +88,11 @@ class AuthTests(APITestCase):
             },
             format="json",
         )
-        self.assertEqual(second.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(second.data["id"], first_user_id)
+        self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", second.data)
         users = User.objects.filter(email__iexact="meme@orbite.test")
         self.assertEqual(users.count(), 1)
-        self.assertEqual(users.first().username, "doublon2")
-        self.assertFalse(users.first().email_verified)
-        self.assertFalse(users.first().is_active)
-        self.assertTrue(users.first().email_verification_token)
-        self.assertTrue(users.first().check_password("AutrePass123!"))
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(users.first().username, "doublon1")
 
     def test_verified_email_blocks_new_registration(self):
         user = make_user("confirme")
@@ -167,17 +151,15 @@ class EmailVerificationTests(APITestCase):
     def _register(self):
         return self.client.post("/api/v1/auth/register/", self.REGISTER, format="json")
 
-    def test_register_issues_token_and_sends_email(self):
+    def test_register_issue_immediat_active_verified_no_email(self):
         response = self._register()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(username="verif")
-        self.assertFalse(user.email_verified)
-        self.assertFalse(user.is_active, "compte inactif tant que l'email n'est pas confirmé")
-        self.assertTrue(user.email_verification_token)
-        self.assertEqual(len(mail.outbox), 1)
-        email = mail.outbox[0]
-        self.assertEqual(email.to, ["verif@orbite.test"])
-        self.assertIn("/verification-email/", email.body)
+        self.assertTrue(user.email_verified, "pas de phase de vérification par email")
+        self.assertTrue(user.is_active, "le compte est actif dès l'inscription")
+        self.assertEqual(user.email_verification_token, "")
+        self.assertEqual(len(mail.outbox), 0, "aucun email de vérification envoyé")
+        self.assertIn("access", response.data, "connexion immédiate attendue")
 
     def test_verify_email_success(self):
         user = make_user("verifuser")

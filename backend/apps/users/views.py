@@ -44,10 +44,12 @@ class RegisterView(APIView):
         from apps.analytics.models import Event
 
         Event.objects.create(user=user, event_type="user_registered", context={"source": "form"})
-        send_verification_email(user)
-        return Response(
-            UserSerializer(user).data, status=status.HTTP_201_CREATED
-        )
+        # Inscription immédiate : le compte est actif et connecté d'office.
+        refresh = RefreshToken.for_user(user)
+        data = UserSerializer(user).data
+        data["access"] = str(refresh.access_token)
+        data["refresh"] = str(refresh)
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class VerifyEmailView(APIView):

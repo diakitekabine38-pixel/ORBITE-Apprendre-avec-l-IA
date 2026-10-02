@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
-import ResendVerification from "../components/ResendVerification";
+import { resolvePostLogin } from "../navigation";
 
 export default function Register() {
   const { register } = useAuth();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     username: "",
@@ -14,7 +15,6 @@ export default function Register() {
     password: "",
     password2: "",
   });
-  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -30,39 +30,13 @@ export default function Register() {
       return;
     }
     try {
-      await register(form);
-      setDone(true);
+      const me = await register(form);
+      navigate(resolvePostLogin(me), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
       setBusy(false);
     }
-  }
-
-  if (done) {
-    return (
-      <div className="mx-auto grid min-h-[70vh] max-w-6xl place-items-center px-4">
-        <div className="glass w-full max-w-md space-y-4 p-8 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-brand/15 text-3xl text-brand-soft">📬</div>
-          <h1 className="text-2xl font-bold">Compte créé !</h1>
-          <p className="text-sm text-muted">
-            On vient de t'envoyer un lien de confirmation sur <strong>{form.email}</strong>.
-            Clique dessus pour valider ton adresse email.
-          </p>
-          <div className="rounded-xl border border-amber-300/40 bg-amber-300/10 p-3 text-left text-xs text-muted">
-            <p className="font-semibold text-amber-700">Tu ne reçois rien ?</p>
-            <p className="mt-1 mb-3">
-              Vérifie d'abord ton dossier <strong>Spam / courriers indésirables</strong> —
-              les emails de confirmation s'y retrouvent parfois.
-            </p>
-            <ResendVerification defaultEmail={form.email} />
-          </div>
-          <p className="text-sm text-muted">
-            Ta connexion se fera toute seule dès que tu cliqueras le lien reçu.
-          </p>
-        </div>
-      </div>
-    );
   }
 
   return (

@@ -80,10 +80,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"password2": "Les deux mots de passe ne correspondent pas."}
             )
-        existing = User.objects.filter(email__iexact=attrs["email"]).first()
-        if existing and existing.email_verified:
+        if User.objects.filter(email__iexact=attrs["email"]).exists():
             raise serializers.ValidationError(
-                {"email": "Un compte actif utilise déjà cette adresse email."}
+                {"email": "Un compte utilise déjà cette adresse email."}
             )
         return attrs
 
@@ -91,28 +90,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated.pop("password2")
         password = validated.pop("password")
         email = validated.pop("email")
-        # Un email jamais confirmé : on réutilise le compte existant pour ne
-        # pas révéler son existence, on renouvelle les identifiants et on
-        # renvoie un lien de vérification.
-        user = (
-            User.objects.filter(email__iexact=email, email_verified=False)
-            .order_by("id")
-            .first()
-        )
-        if user:
-            for field, value in validated.items():
-                setattr(user, field, value)
-            user.email = email
-            user.email_verified = False
-            user.email_verification_token = ""
-            user.is_active = False
-            user.role = User.ROLE_STUDENT
-            user.set_password(password)
-            user.save()
-            return user
         user = User(email=email, **validated)
         user.set_password(password)
-        user.is_active = False
+        user.is_active = True
+        user.email_verified = True
+        user.email_verification_token = ""
         user.role = User.ROLE_STUDENT
         user.save()
         return user

@@ -39,10 +39,12 @@ export function AuthProvider({ children }) {
   }
 
   async function register(payload) {
-    await apiPost("/auth/register/", {
+    const data = await apiPost("/auth/register/", {
       ...payload,
       password2: payload.password,
     });
+    if (data.access && data.refresh) return enterSession(data);
+    return null;
   }
 
   async function logout() {
