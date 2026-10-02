@@ -1,0 +1,59 @@
+# Blueprint Render pour ORBITE (backend Django + frontend React servi via WhiteNoise).
+# Utilisation : connecter le repo puis "New Web Service" -> laisser Render lire
+# ce fichier (Blueprint) OU créer à la main (voir README.md).
+#
+# Hôte gratuit : Render (pas de carte). Base : Supabase Postgres gratuite (valeurs à
+# renseigner dans les variables ci-dessous).
+services:
+  - type: web
+    name: orbite
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: bash ../deploy/render/build.sh
+    startCommand: bash ../deploy/render/start.sh
+    healthCheckPath: /api/health/
+    envVars:
+      # --- Réseau : à adapter (remplacer par ton sous-domaine .onrender.com) ---
+      - key: ORBITE_ALLOWED_HOSTS
+        value: orbite.onrender.com
+      - key: ORBITE_SITE_URL
+        value: https://orbite.onrender.com
+      - key: ORBITE_CORS_ORIGINS
+        value: https://orbite.onrender.com
+      # --- Sécurité ---
+      - key: ORBITE_DEBUG
+        value: "0"
+      - key: ORBITE_SECRET_KEY
+        generateValue: true
+      - key: ORBITE_JWT_SIGNING_KEY
+        generateValue: true
+      # --- Base de données : valeurs de Supabase (Database Settings/Direct connection) ---
+      - key: ORBITE_DB_SSLMODE
+        value: require
+      - key: ORBITE_DB_NAME
+        value: postgres
+      - key: ORBITE_DB_USER
+        value: postgres
+      - key: ORBITE_DB_PASSWORD
+        sync: false
+      - key: ORBITE_DB_HOST
+        sync: false
+      - key: ORBITE_DB_PORT
+        sync: false
+      # --- IA : ta clé Groq ---
+      - key: ORBITE_LLM_PROVIDER
+        value: openai
+      - key: ORBITE_LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: ORBITE_LLM_API_KEY
+        sync: false
+      # --- Optionnels ---
+      - key: ORBITE_TAVILY_API_KEY
+        sync: false
+      - key: ORBITE_STRIPE_SECRET_KEY
+        sync: false
+      - key: ORBITE_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: ORBITE_STRIPE_WEBHOOK_SECRET
+        sync: false

@@ -106,6 +106,8 @@ if os.environ.get("ORBITE_DB", "postgres") == "postgres":
             "PASSWORD": os.environ.get("ORBITE_DB_PASSWORD", ""),
             "HOST": os.environ.get("ORBITE_DB_HOST", "127.0.0.1"),
             "PORT": os.environ.get("ORBITE_DB_PORT", "5432"),
+            # Supabase et autres bases managées exigent SSL ("require").
+            "OPTIONS": {"sslmode": os.environ.get("ORBITE_DB_SSLMODE", "disable")},
         }
     }
 else:
