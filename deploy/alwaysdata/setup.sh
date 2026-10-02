@@ -47,6 +47,7 @@ printf 'ORBITE_TAVILY_API_KEY=%s\n' "${ORBITE_TAVILY_API_KEY:-}" >> "$APP/backen
 printf 'ORBITE_STRIPE_SECRET_KEY=%s\n' "${ORBITE_STRIPE_SECRET_KEY:-}" >> "$APP/backend/.env"
 printf 'ORBITE_STRIPE_PUBLISHABLE_KEY=%s\n' "${ORBITE_STRIPE_PUBLISHABLE_KEY:-}" >> "$APP/backend/.env"
 printf 'ORBITE_STRIPE_WEBHOOK_SECRET=%s\n' "${ORBITE_STRIPE_WEBHOOK_SECRET:-}" >> "$APP/backend/.env"
+printf 'ORBITE_DB=%s\n' "${ORBITE_DB:-sqlite}" >> "$APP/backend/.env"
 chmod 600 "$APP/backend/.env"
 
 echo "==> Migrations + statiques (frontend déjà buildé dans le dépôt)"
@@ -60,4 +61,4 @@ echo "  Site : type Python (WSGI)."
 echo "  Chemin d'application : $APP/backend/config/wsgi.py"
 echo "  Répertoire de travail : $APP/backend"
 echo "  Environnement Python : $APP/venv"
-echo "  Version Python : 3.12 (celle du venv)"
+echo "  Version Python : $( "$APP/venv/bin/python" --version 2>&1 || true )(celle du venv)"
