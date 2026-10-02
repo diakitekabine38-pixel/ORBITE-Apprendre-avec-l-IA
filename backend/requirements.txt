@@ -7,6 +7,7 @@ python-dotenv>=1.0
 Pillow>=11
 # Production serving (Windows-compatible WSGI + static files)
 waitress>=3.0
+gunicorn>=23.0  # Servir Linux (VPS Oracle/OCI), remplace waitress
 whitenoise>=6.0
 # Production database
 psycopg[binary]>=3.2
