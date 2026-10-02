@@ -16,7 +16,6 @@ backend/media/
 
 # Node / Vite
 node_modules/
-frontend/dist/
 *.log
 
 # IDE / OS

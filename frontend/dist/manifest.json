@@ -1,0 +1,19 @@
+{
+  "name": "ORBITE — Apprendre avec l'IA",
+  "short_name": "ORBITE",
+  "description": "Apprends. Évolue. Trouve ton orbite. Plateforme d'apprentissage pilotée par l'IA.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#120d1e",
+  "theme_color": "#8B5CF6",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
